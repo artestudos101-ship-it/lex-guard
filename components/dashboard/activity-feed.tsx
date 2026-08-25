@@ -1,6 +1,6 @@
 "use client"
 
-import { CheckCircle2, FileText, ShieldCheck, Eye } from "lucide-react"
+import { CheckCircle2, FileText, ShieldCheck, Eye, LoaderCircle } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useActivity } from "@/hooks/use-dashboard"
@@ -9,6 +9,7 @@ import type { ActivityItem } from "@/types"
 
 const ICON_MAP: Record<ActivityItem["kind"], typeof CheckCircle2> = {
   analysis_completed: CheckCircle2,
+  analysis_processing: LoaderCircle,
   evidence_validated: ShieldCheck,
   report_generated: FileText,
   review_requested: Eye,

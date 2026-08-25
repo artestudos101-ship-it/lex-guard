@@ -92,3 +92,14 @@ export function EvidenceQualityBadge({ quality, showLabel = false }: { quality: 
 export function evidenceQualityDescription(quality: EvidenceQuality): string {
   return QUALITY_MAP[quality].description
 }
+
+export function ConfirmationBadge({ confirmed }: { confirmed: boolean }) {
+  return (
+    <span className={cn(
+      "inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium",
+      confirmed ? "border-success/25 bg-success-soft text-success" : "border-warning/40 bg-warning-soft text-warning-foreground",
+    )}>
+      {confirmed ? "Confirmado" : "Pendente"}
+    </span>
+  )
+}
