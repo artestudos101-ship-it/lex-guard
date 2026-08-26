@@ -6,8 +6,10 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { DEMO_USER, NOTIFICATION_COUNT } from "@/types/organization"
+import { useAuth } from "@/features/auth/auth-provider"
 
 export function AccountMenu() {
+  const { logout } = useAuth()
   return <DropdownMenu>
     <DropdownMenuTrigger render={<Button variant="ghost" className="h-auto w-full justify-start gap-2 px-2 py-1.5" aria-label="Abrir menu da conta" />}>
       <Avatar size="sm"><AvatarFallback className="bg-primary/10 text-primary">{DEMO_USER.initials}</AvatarFallback></Avatar>
@@ -24,7 +26,7 @@ export function AccountMenu() {
       </DropdownMenuGroup>
       <DropdownMenuSeparator />
       <DropdownMenuItem render={<Link href="/profile" />}><UserRound />Conta e perfil</DropdownMenuItem>
-      <DropdownMenuItem variant="destructive"><LogOut />Sair da conta</DropdownMenuItem>
+      <DropdownMenuItem variant="destructive" onClick={() => void logout()}><LogOut />Sair da conta</DropdownMenuItem>
     </DropdownMenuContent>
   </DropdownMenu>
 }
