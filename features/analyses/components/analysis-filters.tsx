@@ -23,7 +23,7 @@ export function AnalysisFilters({ value, onChange }: { value: AnalysisFilterStat
   function toggle(list: string[], item: string) { return list.includes(item) ? list.filter((entry) => entry !== item) : [...list, item] }
   return (
     <div className="relative">
-      <Button variant={active ? "secondary" : "outline"} size="sm" onClick={() => setOpen((current) => !current)}><Filter data-icon="inline-start" /> {active ? <Badge className="ml-1 size-5 justify-center rounded-full p-0 text-[10px]">{active}</Badge> : null}</Button>
+      <Button variant={active ? "secondary" : "outline"} size="sm" onClick={() => setOpen((current) => !current)}><Filter data-icon="inline-start" /> Filtros{active ? <Badge className="ml-1 size-5 justify-center rounded-full p-0 text-[10px]">{active}</Badge> : null}</Button>
       {open ? <div className="absolute right-0 top-full z-30 mt-2 w-[340px] rounded-xl border bg-popover p-4 shadow-lg">
         <div className="flex items-center justify-between"><div><p className="text-sm font-semibold">Filtrar análises</p><p className="text-xs text-muted-foreground">Atualiza a lista e a URL.</p></div><Button variant="ghost" size="icon" onClick={() => setOpen(false)}><X /></Button></div>
         <div className="mt-4 space-y-5">
