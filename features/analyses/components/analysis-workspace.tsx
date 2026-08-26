@@ -70,10 +70,12 @@ export function AnalysisWorkspace({ analysisId }: { analysisId: string }) {
         ? "lg:grid-cols-[.7fr_1.1fr_1.3fr]"
         : "lg:grid-cols-[1.1fr_1fr_.65fr]"
     : documentOpen
-      ? "lg:grid-cols-[300px_minmax(0,1fr)]"
+      ? decisionOpen
+        ? "lg:grid-cols-[300px_minmax(0,1fr)_300px]"
+        : "lg:grid-cols-[300px_minmax(0,1fr)_56px]"
       : decisionOpen
-        ? "lg:grid-cols-[minmax(0,1fr)_300px]"
-        : "lg:grid-cols-1"
+        ? "lg:grid-cols-[56px_minmax(0,1fr)_300px]"
+        : "lg:grid-cols-[56px_minmax(0,1fr)_56px]"
 
   return (
     <AppShell title="Analysis Workspace" description={`${analysis.id} · processo observável`}>
@@ -148,8 +150,8 @@ export function AnalysisWorkspace({ analysisId }: { analysisId: string }) {
               </ScrollArea>
             </section>
           ) : (
-            <div className="hidden items-start p-2 lg:flex">
-              <Button variant="ghost" size="icon" aria-label="Abrir documento" onClick={() => setDocumentOpen(true)}><ChevronRight /></Button>
+            <div className="flex min-h-0 items-start justify-center border-b p-2 lg:border-b-0 lg:border-r">
+              <Button variant="ghost" size="icon" aria-label="Abrir documento" onClick={() => setDocumentOpen(true)}><BookOpen /></Button>
             </div>
           )}
 
@@ -202,8 +204,8 @@ export function AnalysisWorkspace({ analysisId }: { analysisId: string }) {
               </ScrollArea>
             </aside>
           ) : (
-            <div className="hidden items-start justify-end p-2 lg:flex">
-              <Button variant="ghost" size="icon" aria-label="Abrir decisão" onClick={() => setDecisionOpen(true)}><ChevronLeft /></Button>
+            <div className="flex min-h-0 items-start justify-center border-t p-2 lg:border-l lg:border-t-0">
+              <Button variant="ghost" size="icon" aria-label="Abrir decisão" onClick={() => setDecisionOpen(true)}><ShieldCheck /></Button>
             </div>
           )}
         </div>
