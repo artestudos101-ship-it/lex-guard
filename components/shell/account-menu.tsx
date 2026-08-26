@@ -9,7 +9,7 @@ import { DEMO_USER, NOTIFICATION_COUNT } from "@/types/organization"
 
 export function AccountMenu() {
   return <DropdownMenu>
-    <DropdownMenuTrigger render={<Button variant="ghost" className="h-auto gap-2 px-2 py-1.5" aria-label="Abrir menu da conta" />}>
+    <DropdownMenuTrigger render={<Button variant="ghost" className="h-auto w-full justify-start gap-2 px-2 py-1.5" aria-label="Abrir menu da conta" />}>
       <Avatar size="sm"><AvatarFallback className="bg-primary/10 text-primary">{DEMO_USER.initials}</AvatarFallback></Avatar>
       <span className="hidden max-w-28 truncate text-left text-xs font-medium md:block">{DEMO_USER.name}</span>
     </DropdownMenuTrigger>
@@ -23,7 +23,7 @@ export function AccountMenu() {
         <DropdownMenuItem><Moon />Tema<span className="ml-auto text-xs text-muted-foreground">Sistema</span></DropdownMenuItem>
       </DropdownMenuGroup>
       <DropdownMenuSeparator />
-      <DropdownMenuItem render={<Link href="/profile" />}><UserRound />Meu perfil</DropdownMenuItem>
+      <DropdownMenuItem render={<Link href="/profile" />}><UserRound />Conta e perfil</DropdownMenuItem>
       <DropdownMenuItem variant="destructive"><LogOut />Sair da conta</DropdownMenuItem>
     </DropdownMenuContent>
   </DropdownMenu>

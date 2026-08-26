@@ -2,10 +2,10 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Activity, Bell, FileSearch, FileStack, Gauge, LayoutDashboard, Search, Settings2, ShieldCheck, ScrollText, Users, UsersRound } from "lucide-react"
+import { Activity, FileSearch, FileStack, Gauge, LayoutDashboard, ScrollText, ShieldCheck, Users, UsersRound } from "lucide-react"
 import { Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { DEMO_TENANT, DEMO_USER, NOTIFICATION_COUNT, NAVIGATION_LABEL, PRODUCT_TAGLINE, PRODUCT_NAME } from "@/types/organization"
+import { AccountMenu } from "./account-menu"
+import { DEMO_TENANT, PRODUCT_TAGLINE, PRODUCT_NAME } from "@/types/organization"
 
 const GROUPS = [
   { label: "Visão geral", items: [{ title: "Painel", href: "/", icon: LayoutDashboard }] },
@@ -13,5 +13,17 @@ const GROUPS = [
   { label: "Governança", items: [{ title: "Políticas de risco", href: "/policies", icon: ShieldCheck }, { title: "Avaliação", href: "/evaluation", icon: Gauge }] },
   { label: "Equipe", items: [{ title: "Times", href: "/teams", icon: UsersRound }, { title: "Usuários", href: "/users", icon: Users }, { title: "Atividade", href: "/activity", icon: Activity }] },
 ]
+
 function isActive(pathname: string, href: string) { return href === "/" ? pathname === href : pathname === href || pathname.startsWith(`${href}/`) }
-export function AppSidebar() { const pathname = usePathname(); return <Sidebar collapsible="icon"><SidebarHeader><div className="flex items-center gap-2.5 px-1 py-1.5"><div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground"><ScrollText className="size-4" /></div><div className="flex flex-col leading-tight group-data-[collapsible=icon]:hidden"><span className="text-sm font-semibold tracking-tight">{PRODUCT_NAME}</span><span className="text-xs text-sidebar-foreground/60">{PRODUCT_TAGLINE}</span></div></div><div className="mx-1 flex items-center gap-2 rounded-md border border-sidebar-border/70 bg-sidebar-accent/50 p-2 group-data-[collapsible=icon]:hidden"><div className="flex size-7 items-center justify-center rounded bg-sidebar-primary/20 text-[10px] font-semibold text-sidebar-primary">{DEMO_TENANT.initials}</div><div className="min-w-0 flex-1"><p className="truncate text-xs font-medium">{DEMO_TENANT.name}</p><p className="text-[10px] text-sidebar-foreground/60">{DEMO_TENANT.plan}</p></div><Settings2 className="size-3.5 text-sidebar-foreground/50" /></div></SidebarHeader><SidebarContent>{GROUPS.map((group) => <SidebarGroup key={group.label}><SidebarGroupLabel>{group.label}</SidebarGroupLabel><SidebarGroupContent><SidebarMenu>{group.items.map((item) => <SidebarMenuItem key={item.href}><SidebarMenuButton isActive={isActive(pathname, item.href)} tooltip={item.title} render={<Link href={item.href}><item.icon /><span>{item.title}</span>{item.title === "Atividade" ? <span className="ml-auto text-[10px] text-sidebar-foreground/50">248</span> : null}</Link>} /></SidebarMenuItem>)}</SidebarMenu></SidebarGroupContent></SidebarGroup>)}</SidebarContent><SidebarFooter><SidebarMenu><SidebarMenuItem><SidebarMenuButton tooltip={NAVIGATION_LABEL} render={<Link href="/search"><Search /><span>Busca global</span><span className="ml-auto font-mono text-[10px] text-sidebar-foreground/50">⌘K</span></Link>} /></SidebarMenuItem><SidebarMenuItem><SidebarMenuButton tooltip="Notificações" render={<Link href="/notifications"><Bell /><span>Notificações</span><span className="ml-auto rounded-full bg-sidebar-primary px-1.5 text-[10px] text-sidebar-primary-foreground">{NOTIFICATION_COUNT}</span></Link>} /></SidebarMenuItem><SidebarMenuItem><SidebarMenuButton tooltip="Configurações" render={<Link href="/settings"><Settings2 /><span>Configurações</span></Link>} /></SidebarMenuItem></SidebarMenu><div className="mt-2 flex items-center gap-2 border-t border-sidebar-border/60 px-1 pt-3 group-data-[collapsible=icon]:justify-center"><Avatar className="size-8"><AvatarFallback className="bg-sidebar-accent text-[10px] text-sidebar-accent-foreground">{DEMO_USER.initials}</AvatarFallback></Avatar><div className="min-w-0 group-data-[collapsible=icon]:hidden"><p className="truncate text-xs font-medium">{DEMO_USER.name}</p><p className="truncate text-[10px] text-sidebar-foreground/60">Administrador</p></div></div></SidebarFooter></Sidebar> }
+
+export function AppSidebar() {
+  const pathname = usePathname()
+  return <Sidebar collapsible="icon">
+    <SidebarHeader>
+      <div className="flex items-center gap-2.5 px-1 py-1.5"><div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground"><ScrollText className="size-4" /></div><div className="flex flex-col leading-tight group-data-[collapsible=icon]:hidden"><span className="text-sm font-semibold tracking-tight">{PRODUCT_NAME}</span><span className="text-xs text-sidebar-foreground/60">{PRODUCT_TAGLINE}</span></div></div>
+      <div className="mx-1 flex items-center gap-2 rounded-md border border-sidebar-border/70 bg-sidebar-accent/50 p-2 group-data-[collapsible=icon]:hidden"><div className="flex size-7 items-center justify-center rounded bg-sidebar-primary/20 text-[10px] font-semibold text-sidebar-primary">{DEMO_TENANT.initials}</div><div className="min-w-0 flex-1"><p className="truncate text-xs font-medium">{DEMO_TENANT.name}</p><p className="text-[10px] text-sidebar-foreground/60">{DEMO_TENANT.plan}</p></div></div>
+    </SidebarHeader>
+    <SidebarContent>{GROUPS.map((group) => <SidebarGroup key={group.label}><SidebarGroupLabel>{group.label}</SidebarGroupLabel><SidebarGroupContent><SidebarMenu>{group.items.map((item) => <SidebarMenuItem key={item.href}><SidebarMenuButton isActive={isActive(pathname, item.href)} tooltip={item.title} render={<Link href={item.href}><item.icon /><span>{item.title}</span>{item.title === "Atividade" ? <span className="ml-auto text-[10px] text-sidebar-foreground/50">248</span> : null}</Link>} /></SidebarMenuItem>)}</SidebarMenu></SidebarGroupContent></SidebarGroup>)}</SidebarContent>
+    <SidebarFooter><AccountMenu /></SidebarFooter>
+  </Sidebar>
+}
