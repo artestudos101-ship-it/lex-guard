@@ -24,9 +24,9 @@ export function AnalysisChat({ analysis, onOpenContext }: { analysis: RuntimeAna
           </div>
           <p className="mt-1 truncate text-xs text-muted-foreground">{analysis.orgao} · {analysis.id}</p>
         </div>
-        <Button variant="outline" size="sm" onClick={onOpenContext} render={<Link href={`/analyses/${analysis.id}`} />}>
+        <Link href={`/analyses/${analysis.id}`} onClick={onOpenContext} className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-input bg-background px-3 text-sm font-medium shadow-xs transition-colors hover:bg-muted">
           <ArrowUpRight data-icon="inline-start" /> Abrir contexto
-        </Button>
+        </Link>
       </header>
 
       <ScrollArea className="min-h-0 flex-1">

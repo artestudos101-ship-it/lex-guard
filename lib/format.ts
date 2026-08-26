@@ -16,6 +16,7 @@ const DATE_TIME = new Intl.DateTimeFormat("pt-BR", {
   month: "short",
   hour: "2-digit",
   minute: "2-digit",
+  timeZone: "UTC",
 })
 
 export function formatCurrencyBRL(value: number): string {

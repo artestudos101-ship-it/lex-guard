@@ -50,7 +50,7 @@ export function AnalysisWorkspace({ analysisId }: { analysisId: string }) {
             <CardContent className="flex min-h-64 flex-col items-center justify-center gap-3 text-center">
               <h2 className="text-lg font-semibold">Análise não encontrada</h2>
               <p className="text-sm text-muted-foreground">O identificador não corresponde a uma análise disponível.</p>
-              <Button render={<Link href="/analyses" />}>Voltar para minhas análises</Button>
+              <Link href="/analyses" className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow-xs transition-colors hover:bg-primary/90">Voltar para minhas análises</Link>
             </CardContent>
           </Card>
         </div>

@@ -107,7 +107,7 @@ export function AnalysisCard({
         )}
         <div className="flex items-center justify-between gap-3 border-t pt-4">
           <div className="text-xs text-muted-foreground">
-            <span className="font-medium text-foreground">Última atividade</span>{" "}{new Date(analysis.updatedAt).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
+            <span className="font-medium text-foreground">Última atividade</span>{" "}{new Date(analysis.updatedAt).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", timeZone: "UTC" })}
           </div>
           <div className="flex items-center gap-2">
             {analysis.status === "failed" ? (
@@ -115,7 +115,7 @@ export function AnalysisCard({
             ) : analysis.status === "queued" ? (
               <Button size="sm" onClick={onStart}><Play data-icon="inline-start" /> Iniciar análise</Button>
             ) : null}
-            <Button size="sm" variant={processing ? "default" : "outline"} render={<Link href={`/analyses/${analysis.id}`} />}><ArrowUpRight data-icon="inline-start" /> Abrir análise</Button>
+            <Link href={`/analyses/${analysis.id}`} className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-input bg-background px-3 text-sm font-medium shadow-xs transition-colors hover:bg-muted"><ArrowUpRight data-icon="inline-start" /> Abrir análise</Link>
           </div>
         </div>
       </CardContent>
