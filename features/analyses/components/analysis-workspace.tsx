@@ -113,7 +113,7 @@ export function AnalysisWorkspace({ analysisId }: { analysisId: string }) {
           </div>
         </div>
 
-        <div className={`grid min-h-0 flex-1 ${gridClass}`}>
+        <div className={`grid min-h-0 flex-1 transition-[grid-template-columns] duration-300 ease-in-out ${gridClass}`}>
           {documentOpen ? (
             <section id="document" className="min-h-0 border-b lg:border-b-0 lg:border-r">
               <div className="flex items-center gap-2 border-b p-3">
