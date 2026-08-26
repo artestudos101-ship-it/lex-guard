@@ -1,12 +1,64 @@
 "use client"
 
-import Link from "next/link"
-import { useState } from "react"
-import { ArrowRight, Check, FileText, ShieldCheck, UploadCloud } from "lucide-react"
+import { useMemo, useState } from "react"
+import { ArrowLeft, ArrowRight, Check, FileText, ShieldCheck, UploadCloud, X } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 import { AppShell } from "@/components/shell/app-shell"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { createRuntimeAnalysis } from "@/services/analysis-runtime"
+import { startAnalysisRuntime } from "@/services/analysis-orchestrator"
+import { MOCK_POLICIES } from "@/mock/policies"
 
-const steps = ["Documentos", "Política de risco", "Revisão", "Processamento"]
-export function NewAnalysis() { const [step, setStep] = useState(0); const [file, setFile] = useState(false); return <AppShell title="Nova análise" description="Configure o contexto antes de iniciar o processamento"><div className="mx-auto flex max-w-4xl flex-col gap-6"><div><p className="font-mono text-[10px] uppercase tracking-[0.18em] text-primary">Fluxo guiado · {step + 1}/4</p><h2 className="mt-2 text-3xl font-semibold tracking-[-0.04em]">Prepare uma nova decisão</h2><p className="mt-2 text-sm leading-6 text-muted-foreground">Cada análise se torna um chat persistente com documentos, evidências e decisões rastreáveis.</p></div><div className="grid gap-2 md:grid-cols-4">{steps.map((label, index) => <div key={label} className={`flex items-center gap-2 rounded-md border p-3 text-xs ${index === step ? "border-primary bg-primary/5 text-primary" : index < step ? "border-success/40 bg-success-soft text-success-foreground" : "text-muted-foreground"}`}><span className="flex size-6 items-center justify-center rounded-full border font-mono">{index < step ? <Check /> : index + 1}</span>{label}</div>)}</div><Card><CardHeader><CardTitle className="text-base">{steps[step]}</CardTitle><p className="text-sm text-muted-foreground">{step === 0 ? "Carregue o edital e anexos que farão parte do contexto." : step === 1 ? "Selecione as políticas que devem orientar a análise." : step === 2 ? "Confirme os documentos e o escopo antes de iniciar." : "Acompanhe eventos observáveis enquanto o copiloto processa."}</p></CardHeader><CardContent className="flex flex-col gap-5">{step === 0 ? <button type="button" onClick={() => setFile(true)} className="flex min-h-52 flex-col items-center justify-center gap-3 rounded-lg border border-dashed bg-muted/30 text-center transition-colors hover:border-primary hover:bg-primary/5"><div className="flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary"><UploadCloud /></div><span className="text-sm font-medium">{file ? "Edital-014-2026.pdf pronto" : "Selecione ou arraste o edital"}</span><span className="text-xs text-muted-foreground">PDF, DOCX ou TXT · até 50 MB</span></button> : <div className="flex flex-col gap-3">{["Edital principal", "Anexos e termos de referência", "Política padrão de contratação"].map((item) => <div key={item} className="flex items-center gap-3 rounded-md border p-4"><FileText className="size-4 text-primary" /><span className="flex-1 text-sm">{item}</span><Badge variant="secondary"><ShieldCheck data-icon="inline-start" /> Vinculado</Badge></div>)}</div>}<div className="flex items-center justify-between border-t pt-5"><Button variant="ghost" render={<Link href="/analyses" />}>Cancelar</Button><Button onClick={() => setStep((current) => Math.min(3, current + 1))}>{step === 3 ? "Iniciar processamento" : "Continuar"}<ArrowRight data-icon="inline-end" /></Button></div></CardContent></Card></div></AppShell> }
+const steps = ["Documentos", "Política", "Revisão", "Processamento"]
+const sampleDocuments = [
+  { name: "Edital-PE-112-2025-Beta.pdf", pages: 37, size: "7,2 MB" },
+  { name: "Termo-de-Referencia-112-2025.pdf", pages: 18, size: "2,1 MB" },
+  { name: "Anexo-Tecnico-112-2025.pdf", pages: 29, size: "4,8 MB" },
+]
+
+export function NewAnalysis() {
+  const router = useRouter()
+  const [step, setStep] = useState(0)
+  const [documents, setDocuments] = useState<typeof sampleDocuments>([])
+  const [policyId, setPolicyId] = useState(MOCK_POLICIES[0]?.id ?? "pol_pme")
+  const [title, setTitle] = useState("Pregão Eletrônico 112/2026")
+  const selectedPolicy = useMemo(() => MOCK_POLICIES.find((policy) => policy.id === policyId) ?? MOCK_POLICIES[0], [policyId])
+
+  function addDocument(document = sampleDocuments[documents.length]) {
+    if (!document || documents.length >= 3) return
+    setDocuments((current) => [...current, document])
+    toast.success("Documento vinculado", { description: document.name })
+  }
+
+  function removeDocument(index: number) {
+    setDocuments((current) => current.filter((_, i) => i !== index))
+  }
+
+  function start() {
+    const analysis = createRuntimeAnalysis({ title, orgao: "Secretaria de Estado da Saúde", policyId: selectedPolicy?.id ?? "pol_pme", policyName: selectedPolicy?.name ?? "Padrão PME", documentNames: documents.map((doc) => doc.name) })
+    startAnalysisRuntime(analysis.id)
+    toast.success("Análise iniciada", { description: "O card será atualizado em Minhas análises." })
+    router.push("/analyses")
+  }
+
+  const canContinue = step === 0 ? documents.length >= 1 : true
+  return <AppShell title="Nova análise" description="Configure o contexto antes de iniciar o processamento">
+    <div className="mx-auto flex max-w-5xl flex-col gap-6">
+      <div><Button variant="ghost" size="sm" onClick={() => router.push("/analyses")}><ArrowLeft data-icon="inline-start" /> Minhas análises</Button><p className="mt-4 font-mono text-[10px] uppercase tracking-[0.18em] text-primary">Fluxo guiado · {step + 1}/4</p><h2 className="mt-2 text-3xl font-semibold tracking-[-0.04em]">Prepare uma nova decisão</h2><p className="mt-2 text-sm leading-6 text-muted-foreground">Os documentos e a política formam o contexto que será carregado na conversa e na decisão.</p></div>
+      <div className="grid gap-2 md:grid-cols-4">{steps.map((label, index) => <div key={label} className={`flex items-center gap-2 rounded-md border p-3 text-xs ${index === step ? "border-primary bg-primary/5 text-primary" : index < step ? "border-success/40 bg-success-soft text-success-foreground" : "text-muted-foreground"}`}><span className="flex size-6 items-center justify-center rounded-full border font-mono">{index < step ? <Check className="size-3.5" /> : index + 1}</span>{label}</div>)}</div>
+      <Card><CardHeader><CardTitle className="text-base">{steps[step]}</CardTitle><p className="text-sm text-muted-foreground">{step === 0 ? "Carregue de 1 a 3 documentos que farão parte do contexto." : step === 1 ? "Selecione a política que será confrontada com as evidências." : step === 2 ? "Confirme o escopo antes de iniciar. O processo será rastreável na conversa." : "O processamento será executado em jobs e aparecerá no card de Minhas análises."}</p></CardHeader><CardContent className="flex flex-col gap-5">
+        {step === 0 ? <>
+          <div className="flex flex-col gap-2"><label className="text-xs font-semibold" htmlFor="analysis-title">Nome da análise</label><Input id="analysis-title" value={title} onChange={(e) => setTitle(e.target.value)} /></div>
+          <button type="button" onClick={() => addDocument()} disabled={documents.length >= 3} className="flex min-h-40 flex-col items-center justify-center gap-3 rounded-lg border border-dashed bg-muted/20 text-center transition-colors hover:border-primary hover:bg-primary/5 disabled:cursor-not-allowed disabled:opacity-60"><div className="flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary"><UploadCloud /></div><span className="text-sm font-medium">{documents.length >= 3 ? "Limite de 3 documentos atingido" : "Adicionar documento demonstrativo"}</span><span className="text-xs text-muted-foreground">No MVP, o serviço mock simula o upload e a validação do PDF.</span></button>
+          <div className="grid gap-3 md:grid-cols-3">{documents.map((doc, index) => <div key={doc.name} className="rounded-lg border p-3"><div className="flex items-start gap-3"><div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary"><FileText className="size-4" /></div><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{doc.name}</p><p className="mt-1 text-xs text-muted-foreground">{doc.pages} páginas · {doc.size}</p><Badge className="mt-2" variant="secondary"><Check data-icon="inline-start" /> Válido</Badge></div><Button variant="ghost" size="icon" onClick={() => removeDocument(index)} aria-label={`Remover ${doc.name}`}><X /></Button></div></div>)}</div>
+        </> : step === 1 ? <div className="grid gap-3 md:grid-cols-3">{MOCK_POLICIES.map((policy) => <button key={policy.id} type="button" onClick={() => setPolicyId(policy.id)} className={`rounded-xl border p-4 text-left transition-colors ${policy.id === policyId ? "border-primary bg-primary/5 ring-1 ring-primary/20" : "hover:bg-muted/30"}`}><div className="flex items-start justify-between gap-3"><div><p className="text-sm font-semibold">{policy.name}</p><p className="mt-1 text-xs text-muted-foreground">Versão {policy.version}</p></div><ShieldCheck className="size-4 text-primary" /></div><div className="mt-4 grid gap-2 text-xs text-muted-foreground"><span>Prazo: ≥ {policy.rules.minDeadlineDays} dias</span><span>Garantia: ≤ {policy.rules.maxGuaranteePct}%</span><span>Multa: ≤ {policy.rules.maxPenaltyPct}%</span></div>{policy.id === policyId ? <Badge className="mt-4">Selecionada</Badge> : null}</button>)}</div> : step === 2 ? <div className="space-y-3"><SummaryRow label="Documentos" value={`${documents.length}`} /><SummaryRow label="Política" value={`${selectedPolicy?.name} · ${selectedPolicy?.version}`} /><SummaryRow label="Nome" value={title} /><SummaryRow label="Contexto" value="Documento + evidência + política + decisão" /></div> : <div className="rounded-xl border bg-muted/20 p-5"><p className="text-sm font-semibold">Tudo pronto.</p><p className="mt-1 text-sm text-muted-foreground">Ao iniciar, o serviço mock criará os jobs, atualizará o card e preencherá a conversa progressivamente.</p></div>}
+        <div className="flex items-center justify-between border-t pt-5"><Button variant="ghost" onClick={() => step === 0 ? router.push("/analyses") : setStep((current) => current - 1)}>Voltar</Button>{step < 3 ? <Button disabled={!canContinue} onClick={() => setStep((current) => current + 1)}>Continuar <ArrowRight data-icon="inline-end" /></Button> : <Button onClick={start}>Iniciar análise <ArrowRight data-icon="inline-end" /></Button>}</div>
+      </CardContent></Card>
+    </div>
+  </AppShell>
+}
+function SummaryRow({ label, value }: { label: string; value: string }) { return <div className="flex items-center justify-between rounded-lg border p-4"><span className="text-xs text-muted-foreground">{label}</span><span className="text-sm font-medium">{value}</span></div> }
