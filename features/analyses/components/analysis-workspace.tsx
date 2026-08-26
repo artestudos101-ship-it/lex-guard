@@ -32,7 +32,7 @@ export function AnalysisWorkspace({ analysisId }: { analysisId: string }) {
   useEffect(() => {
     hydrateRuntime()
     const unsubscribe = subscribeRuntime(() => setRuntimeVersion((version) => version + 1))
-    return unsubscribe
+    return () => { unsubscribe() }
   }, [])
 
   const analysis: RuntimeAnalysis | null = useMemo(() => {
