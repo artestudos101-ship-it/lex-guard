@@ -33,6 +33,5 @@ export function useAnalysisStore() {
   const update = useCallback((id: string, patch: Partial<AnalysisView>) => setAnalyses((current) => current.map((item) => item.id === id ? { ...item, ...patch, updatedAt: new Date().toISOString() } : item)), [])
   const start = useCallback((id: string) => update(id, { status: "processing", stepStates: defaultSteps.map((_, i) => i === 0 ? "processing" : "pending"), completedSteps: 0, progress: 0 }), [update])
   const archive = useCallback((id: string) => update(id, { archived: true }), [update])
-  const duplicate = useCallback((id: string) => setAnalyses((current) => { const source = current.find((item) => item.id === id); if (!source) return current; return [{ ...source, id: `AN-${Date.now().toString().slice(-6)}`, title: `${source.title} · cópia`, status: "queued", progress: 0, completedSteps: 0, stepStates: defaultSteps.map(() => "pending"), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), archived: false }, ...current] }), [])
-  return { analyses: analyses.filter((item) => !item.archived), update, start, archive, duplicate, ready }
+  return { analyses: analyses.filter((item) => !item.archived), update, start, archive, ready }
 }
