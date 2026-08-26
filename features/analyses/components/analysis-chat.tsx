@@ -24,7 +24,7 @@ export function AnalysisChat({ analysis, onOpenContext }: { analysis: RuntimeAna
           </div>
           <p className="mt-1 truncate text-xs text-muted-foreground">{analysis.orgao} · {analysis.id}</p>
         </div>
-        <Link href={`/analyses/${analysis.id}`} onClick={onOpenContext} className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-input bg-background px-3 text-sm font-medium shadow-xs transition-colors hover:bg-muted">
+        <Link href={`/analyses/${analysis.id}`} onClick={onOpenContext} className="hidden h-9 items-center justify-center gap-2 rounded-md border border-input bg-background px-3 text-sm font-medium shadow-xs transition-colors hover:bg-muted sm:inline-flex">
           <ArrowUpRight data-icon="inline-start" /> Abrir contexto
         </Link>
       </header>
@@ -84,7 +84,7 @@ export function AnalysisChat({ analysis, onOpenContext }: { analysis: RuntimeAna
 
       <footer className="shrink-0 border-t bg-background p-3 md:p-4">
         <div className="mx-auto max-w-3xl rounded-2xl border bg-card p-2 shadow-sm">
-          <div className="flex items-end gap-2">
+          <div className="flex items-end gap-1 sm:gap-2">
             <Button variant="ghost" size="icon" aria-label="Anexar documento"><Paperclip /></Button>
             <textarea aria-label="Mensagem para a análise" placeholder="Pergunte sobre evidências, risco ou política..." className="min-h-10 max-h-32 flex-1 resize-none bg-transparent px-2 py-2 text-sm outline-none placeholder:text-muted-foreground" />
             <Button size="icon" aria-label="Enviar mensagem"><Send /></Button>

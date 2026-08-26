@@ -42,7 +42,7 @@ export function AnalysisCard({
             <FileText className="size-5" />
           </div>
           <div className="min-w-0 flex-1">
-            <div className="flex items-start justify-between gap-3">
+            <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold">{analysis.title}</p>
                 <p className="mt-1 truncate text-xs text-muted-foreground">{analysis.orgao} · {analysis.id}</p>
@@ -105,11 +105,11 @@ export function AnalysisCard({
             <Metric label="Conflitos" value={String(analysis.conflictCount)} />
           </div>
         )}
-        <div className="flex items-center justify-between gap-3 border-t pt-4">
+        <div className="flex flex-col items-stretch gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="text-xs text-muted-foreground">
             <span className="font-medium text-foreground">Última atividade</span>{" "}{new Date(analysis.updatedAt).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", timeZone: "UTC" })}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
             {analysis.status === "failed" ? (
               <Button variant="outline" size="sm" onClick={onRetry}><RefreshCw data-icon="inline-start" /> Tentar novamente</Button>
             ) : analysis.status === "queued" ? (
