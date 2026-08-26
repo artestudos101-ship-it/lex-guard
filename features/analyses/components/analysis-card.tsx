@@ -115,7 +115,7 @@ export function AnalysisCard({
             ) : analysis.status === "queued" ? (
               <Button size="sm" onClick={onStart}><Play data-icon="inline-start" /> Iniciar análise</Button>
             ) : null}
-            <Link href={`/analyses/${analysis.id}`} className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-input bg-background px-3 text-sm font-medium shadow-xs transition-colors hover:bg-muted"><ArrowUpRight data-icon="inline-start" /> Abrir análise</Link>
+            <Link href={`/analyses?analysis=${analysis.id}`} className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-input bg-background px-3 text-sm font-medium shadow-xs transition-colors hover:bg-muted"><ArrowUpRight data-icon="inline-start" /> Abrir contexto</Link><Link href={`/analyses/${analysis.id}`} className="inline-flex h-9 items-center justify-center gap-2 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground shadow-xs transition-colors hover:bg-primary/90"><ArrowUpRight data-icon="inline-start" /> Abrir análise</Link>
           </div>
         </div>
       </CardContent>

@@ -1,6 +1,6 @@
 "use client"
 
-import { CheckCircle2, ShieldAlert, Users } from "lucide-react"
+import { ShieldAlert, Users } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import type { RuntimeAnalysis } from "@/types/analysis-runtime"
@@ -15,7 +15,6 @@ export function DecisionContext({ analysis }: { analysis: RuntimeAnalysis }) {
       <div className="flex items-center justify-between"><div><p className="text-[10px] uppercase tracking-wide text-muted-foreground">Política</p><p className="mt-1 text-sm font-medium">{analysis.policyName}</p></div><Badge variant="outline">3 regras</Badge></div>
       <div className="flex items-center justify-between"><div><p className="text-[10px] uppercase tracking-wide text-muted-foreground">Conflitos</p><p className="mt-1 text-sm font-medium">{analysis.conflictCount}</p></div><div><p className="text-[10px] uppercase tracking-wide text-muted-foreground">Evidências</p><p className="mt-1 text-sm font-medium">{analysis.evidenceCount}</p></div></div>
       <div className="flex items-center gap-2 rounded-lg border p-3"><Users className="size-4 text-muted-foreground" /><div><p className="text-xs text-muted-foreground">Responsável</p><p className="text-sm font-medium">{analysis.responsible}</p></div></div>
-      <div className="flex items-center gap-2 text-xs text-muted-foreground"><CheckCircle2 className="size-4 text-success" />Configuração controlada pelo administrador.</div>
     </CardContent></Card>
   </div>
 }

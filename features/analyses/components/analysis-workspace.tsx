@@ -196,8 +196,6 @@ export function AnalysisWorkspace({ analysisId }: { analysisId: string }) {
                       <div className="flex items-center justify-between"><span>Documentos</span><span className="font-medium text-foreground">{analysis.documentNames.length}</span></div>
                       <div className="flex items-center justify-between"><span>Regras</span><span className="font-medium text-foreground">3</span></div>
                       <div className="flex items-center justify-between"><span>Versão da política</span><span className="font-medium text-foreground">v3.2</span></div>
-                      <Separator />
-                      <p>Configuração controlada pelo administrador. Alterações no conjunto de documentos e regras não fazem parte da análise em execução.</p>
                     </CardContent>
                   </Card>
                 </div>
