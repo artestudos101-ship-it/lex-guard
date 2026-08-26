@@ -9,7 +9,7 @@ import { DEMO_TENANT, DEMO_USER, NOTIFICATION_COUNT, NAVIGATION_LABEL, PRODUCT_T
 
 const GROUPS = [
   { label: "Visão geral", items: [{ title: "Painel", href: "/", icon: LayoutDashboard }] },
-  { label: "Execução", items: [{ title: "Nova análise", href: "/analyses/new", icon: FileSearch }, { title: "Análises", href: "/analyses", icon: FileSearch }, { title: "Pacotes de decisão", href: "/reports", icon: FileStack }] },
+  { label: "Execução", items: [{ title: "Minhas análises", href: "/analyses", icon: FileSearch }, { title: "Pacotes de decisão", href: "/reports", icon: FileStack }] },
   { label: "Governança", items: [{ title: "Políticas de risco", href: "/policies", icon: ShieldCheck }, { title: "Avaliação", href: "/evaluation", icon: Gauge }] },
   { label: "Equipe", items: [{ title: "Times", href: "/teams", icon: UsersRound }, { title: "Usuários", href: "/users", icon: Users }, { title: "Atividade", href: "/activity", icon: Activity }] },
 ]
