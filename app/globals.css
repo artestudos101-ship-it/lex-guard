@@ -195,9 +195,15 @@
 
 /* LexGuard AI workflow accents: designed for the existing semantic token system. */
 :root {
+<<<<<<< HEAD
   --lex-primary: #273b72;
   --lex-ai: #6875f5;
   --lex-cyan: #26b8c9;
+=======
+  --lex-primary: #243B64;
+  --lex-ai: #6C7CFF;
+  --lex-cyan: #35C7D8;
+>>>>>>> c2b5b919d787ff80bc8acf75c985ad5beb80db5c
   --lex-success: #35B779;
   --lex-warning: #E5AE42;
   --lex-critical: #E56B76;
