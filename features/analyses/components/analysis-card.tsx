@@ -80,7 +80,7 @@ export function AnalysisCard({
               </div>
               <span className="font-mono text-sm font-semibold text-primary">{analysis.progress}%</span>
             </div>
-            <Progress value={analysis.progress} className="mt-3" />
+            <Progress value={analysis.progress} aria-label={`Progresso da análise: ${analysis.title}`} className="mt-3" />
             <div className="mt-4 grid gap-2 sm:grid-cols-2">
               {analysis.blocks.slice(0, 6).map((block) => (
                 <div key={block.id} className="flex items-center gap-2 text-xs text-muted-foreground">

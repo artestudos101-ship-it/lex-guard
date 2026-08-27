@@ -8,11 +8,13 @@ function Progress({
   className,
   children,
   value,
+  "aria-label": ariaLabel,
   ...props
 }: ProgressPrimitive.Root.Props) {
   return (
     <ProgressPrimitive.Root
       value={value}
+      aria-label={ariaLabel ?? "Progresso"}
       data-slot="progress"
       className={cn("flex flex-wrap gap-3", className)}
       {...props}

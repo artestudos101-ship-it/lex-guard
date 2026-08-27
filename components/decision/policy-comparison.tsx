@@ -5,7 +5,7 @@ import type { ConflictStatus, PolicyConflict } from "@/types"
 const STATUS_MAP: Record<
   ConflictStatus,
   { icon: typeof Check; label: string; row: string; chip: string }
-> = {
+ = {
   ok: {
     icon: Check,
     label: "Conforme",

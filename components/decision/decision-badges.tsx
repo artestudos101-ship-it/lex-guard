@@ -5,7 +5,7 @@ import type { EvidenceQuality, Recommendation, RiskSeverity } from "@/types"
 const RECOMMENDATION_MAP: Record<
   Recommendation,
   { label: string; icon: typeof ArrowUpRight; className: string }
-> = {
+ = {
   ADVANCE: {
     label: "Avançar",
     icon: ArrowUpRight,
