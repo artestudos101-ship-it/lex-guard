@@ -16,9 +16,14 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "LexGuard — Copiloto de Risco para Licitações",
+  title: "LexGuard — Inteligência de Risco para Licitações",
   description:
-    "Plataforma de inteligência de decisão para licitações públicas. Transforme editais em fatos, riscos, evidências e decisões rastreáveis.",
+    "Transforme editais complexos em riscos, evidências e decisões empresariais com IA.",
+  openGraph: {
+    title: "LexGuard — Inteligência de Risco para Licitações",
+    description: "Transforme editais complexos em riscos, evidências e decisões empresariais com IA.",
+    type: "website",
+  },
   generator: "v0.app",
 }
 
