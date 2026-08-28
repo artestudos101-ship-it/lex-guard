@@ -127,6 +127,27 @@ class Assignment(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
+class Decision(Base):
+    __tablename__ = "decisions"
+    id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, default=uuid4)
+    tenant_id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), index=True)
+    analysis_id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), unique=True, index=True)
+    recommendation: Mapped[str] = mapped_column(String(32))
+    rationale: Mapped[str] = mapped_column(Text(), default="")
+    created_by: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class Report(Base):
+    __tablename__ = "reports"
+    id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, default=uuid4)
+    tenant_id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), index=True)
+    analysis_id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), unique=True, index=True)
+    format: Mapped[str] = mapped_column(String(16), default="json")
+    content_json: Mapped[str] = mapped_column(Text(), default="{}")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
 class AuditLog(Base):
     __tablename__ = "audit_logs"
     id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, default=uuid4)

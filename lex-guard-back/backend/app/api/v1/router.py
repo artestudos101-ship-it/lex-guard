@@ -1,6 +1,7 @@
 import asyncio
 import json
 from datetime import datetime, timezone
+from pathlib import Path
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, Response, UploadFile
@@ -11,7 +12,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import create_access_token, current_claims, hash_password, verify_password
 from app.core.database import get_session
-from app.models import Analysis, AnalysisDocument, AnalysisEvent, Comment, Document, Evidence, Finding, Rule, Tenant, User
+from app.core.config import settings
+from app.models import Analysis, AnalysisDocument, AnalysisEvent, Comment, Decision, Document, Evidence, Finding, Report, Rule, Tenant, User
 from app.worker import enqueue_analysis
 
 router = APIRouter()
@@ -63,6 +65,11 @@ class LoginIn(BaseModel):
     password: str = Field(min_length=8, max_length=128)
 
 
+class DecisionIn(BaseModel):
+    recommendation: str = Field(pattern="^(ADVANCE|REVIEW|NOT_PRIORITY)$")
+    rationale: str = Field(default="", max_length=4000)
+
+
 @router.post("/auth/register")
 async def register(payload: RegisterIn, response: Response, session: AsyncSession = Depends(get_session)):
     existing = await session.scalar(select(User).where(User.email == payload.email.lower()))
@@ -77,6 +84,12 @@ async def register(payload: RegisterIn, response: Response, session: AsyncSessio
     token = create_access_token(str(user.id), str(tenant.id), user.role)
     response.set_cookie("lexguard_session", token, httponly=True, secure=False, samesite="lax", max_age=28800)
     return {"access_token": token, "token_type": "bearer", "user": {"id": str(user.id), "name": user.name, "email": user.email}, "tenant": {"id": str(tenant.id), "name": tenant.name, "plan": tenant.plan}}
+
+
+@router.post("/auth/logout")
+async def logout(response: Response):
+    response.delete_cookie("lexguard_session")
+    return {"ok": True}
 
 
 @router.post("/auth/login")
@@ -117,10 +130,14 @@ async def upload_document(
     if len(content) > 25_000_000:
         raise HTTPException(413, detail={"code": "FILE_TOO_LARGE", "message": "Maximum upload size is 25 MB"})
     tenant_id, _, _ = scope
+    storage_key = f"tenants/{tenant_id}/documents/{uuid4()}-{Path(file.filename).name}"
+    target = Path(settings.upload_dir) / storage_key
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_bytes(content)
     document = Document(
         tenant_id=tenant_id,
-        filename=file.filename,
-        storage_key=f"tenants/{tenant_id}/documents/{uuid4()}-{file.filename}",
+        filename=Path(file.filename).name,
+        storage_key=storage_key,
         mime_type=file.content_type or "application/octet-stream",
         size_bytes=len(content),
         status="READY",
@@ -196,6 +213,48 @@ async def get_analysis(
         raise HTTPException(404, detail={"code": "ANALYSIS_NOT_FOUND", "message": "Analysis not found"})
     ids = list((await session.scalars(select(AnalysisDocument.document_id).where(AnalysisDocument.analysis_id == analysis.id))).all())
     return AnalysisOut(id=analysis.id, status=analysis.status, progress=analysis.progress, document_ids=ids, created_at=analysis.created_at)
+
+
+@router.get("/analyses/{analysis_id}/decision")
+async def get_decision(analysis_id: UUID, scope: tuple[UUID, UUID, str] = Depends(_scope), session: AsyncSession = Depends(get_session)):
+    tenant_id, _, _ = scope
+    decision = await session.scalar(select(Decision).where(Decision.analysis_id == analysis_id, Decision.tenant_id == tenant_id))
+    if not decision:
+        raise HTTPException(404, detail={"code": "DECISION_NOT_FOUND", "message": "Decision package not found"})
+    return {"id": str(decision.id), "analysis_id": str(decision.analysis_id), "recommendation": decision.recommendation, "rationale": decision.rationale, "created_at": decision.created_at}
+
+
+@router.post("/analyses/{analysis_id}/decision")
+async def create_decision(analysis_id: UUID, payload: DecisionIn, scope: tuple[UUID, UUID, str] = Depends(_scope), session: AsyncSession = Depends(get_session)):
+    tenant_id, user_id, _ = scope
+    analysis = await session.scalar(select(Analysis).where(Analysis.id == analysis_id, Analysis.tenant_id == tenant_id))
+    if not analysis:
+        raise HTTPException(404, detail={"code": "ANALYSIS_NOT_FOUND", "message": "Analysis not found"})
+    decision = await session.scalar(select(Decision).where(Decision.analysis_id == analysis_id, Decision.tenant_id == tenant_id))
+    if decision:
+        decision.recommendation, decision.rationale = payload.recommendation, payload.rationale.strip()
+    else:
+        decision = Decision(tenant_id=tenant_id, analysis_id=analysis_id, recommendation=payload.recommendation, rationale=payload.rationale.strip(), created_by=user_id)
+        session.add(decision)
+    await session.commit()
+    await session.refresh(decision)
+    return {"id": str(decision.id), "analysis_id": str(decision.analysis_id), "recommendation": decision.recommendation, "rationale": decision.rationale, "created_at": decision.created_at}
+
+
+@router.get("/analyses/{analysis_id}/report")
+async def get_report(analysis_id: UUID, scope: tuple[UUID, UUID, str] = Depends(_scope), session: AsyncSession = Depends(get_session)):
+    tenant_id, _, _ = scope
+    findings = list((await session.scalars(select(Finding).where(Finding.analysis_id == analysis_id, Finding.tenant_id == tenant_id))).all())
+    decision = await session.scalar(select(Decision).where(Decision.analysis_id == analysis_id, Decision.tenant_id == tenant_id))
+    content = {"analysis_id": str(analysis_id), "recommendation": decision.recommendation if decision else "REVIEW", "findings": [{"id": str(f.id), "severity": f.severity, "title": f.title, "explanation": f.explanation} for f in findings]}
+    report = await session.scalar(select(Report).where(Report.analysis_id == analysis_id, Report.tenant_id == tenant_id))
+    if not report:
+        report = Report(tenant_id=tenant_id, analysis_id=analysis_id, content_json=json.dumps(content))
+        session.add(report)
+    else:
+        report.content_json = json.dumps(content)
+    await session.commit()
+    return {"data": content, "meta": {"generated": True, "total_findings": len(findings)}}
 
 
 @router.get("/analyses/{analysis_id}/events")
