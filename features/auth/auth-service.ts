@@ -1,4 +1,5 @@
-import { DEMO_TENANT, DEMO_USER, MOCK_AUTH, mockDelay, type Session } from "@/types/organization"
+import { DEMO_TENANT, DEMO_USER, MOCK_AUTH, mockDelay, API_ADAPTER, type Session } from "@/types/organization"
+import { api } from "@/lib/api-client"
 import type { RegisterInput } from "./types"
 
 const COOKIE = "lexguard_mock_session"

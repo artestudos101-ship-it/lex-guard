@@ -3,15 +3,15 @@ import json
 from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Response, UploadFile
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.auth import current_claims
+from app.core.auth import create_access_token, current_claims, hash_password, verify_password
 from app.core.database import get_session
-from app.models import Analysis, AnalysisDocument, AnalysisEvent, Document, Evidence, Finding, Rule
+from app.models import Analysis, AnalysisDocument, AnalysisEvent, Comment, Document, Evidence, Finding, Rule, Tenant, User
 from app.worker import enqueue_analysis
 
 router = APIRouter()
@@ -37,6 +37,59 @@ class AnalysisOut(BaseModel):
     progress: int
     document_ids: list[UUID]
     created_at: datetime
+
+
+class CommentIn(BaseModel):
+    text: str = Field(min_length=1, max_length=4000)
+
+
+class CommentOut(BaseModel):
+    id: UUID
+    analysis_id: UUID
+    author_id: UUID
+    text: str
+    created_at: datetime
+
+
+class RegisterIn(BaseModel):
+    name: str = Field(min_length=2, max_length=160)
+    email: str = Field(min_length=5, max_length=320)
+    password: str = Field(min_length=8, max_length=128)
+    organization: str = Field(default="Nova Empresa Ltda.", min_length=2, max_length=160)
+
+
+class LoginIn(BaseModel):
+    email: str = Field(min_length=5, max_length=320)
+    password: str = Field(min_length=8, max_length=128)
+
+
+@router.post("/auth/register")
+async def register(payload: RegisterIn, response: Response, session: AsyncSession = Depends(get_session)):
+    existing = await session.scalar(select(User).where(User.email == payload.email.lower()))
+    if existing:
+        raise HTTPException(409, detail={"code": "EMAIL_IN_USE", "message": "Unable to create account"})
+    tenant = Tenant(name=payload.organization.strip(), plan="mvp")
+    session.add(tenant)
+    await session.flush()
+    user = User(tenant_id=tenant.id, email=payload.email.lower(), name=payload.name.strip(), password_hash=hash_password(payload.password), role="owner")
+    session.add(user)
+    await session.commit()
+    token = create_access_token(str(user.id), str(tenant.id), user.role)
+    response.set_cookie("lexguard_session", token, httponly=True, secure=False, samesite="lax", max_age=28800)
+    return {"access_token": token, "token_type": "bearer", "user": {"id": str(user.id), "name": user.name, "email": user.email}, "tenant": {"id": str(tenant.id), "name": tenant.name, "plan": tenant.plan}}
+
+
+@router.post("/auth/login")
+async def login(payload: LoginIn, response: Response, session: AsyncSession = Depends(get_session)):
+    user = await session.scalar(select(User).where(User.email == payload.email.lower()))
+    if not user or not verify_password(payload.password, user.password_hash):
+        raise HTTPException(401, detail={"code": "INVALID_CREDENTIALS", "message": "Unable to sign in"})
+    tenant = await session.scalar(select(Tenant).where(Tenant.id == user.tenant_id))
+    if not tenant:
+        raise HTTPException(401, detail={"code": "TENANT_NOT_FOUND", "message": "Unable to sign in"})
+    token = create_access_token(str(user.id), str(tenant.id), user.role)
+    response.set_cookie("lexguard_session", token, httponly=True, secure=False, samesite="lax", max_age=28800)
+    return {"access_token": token, "token_type": "bearer", "user": {"id": str(user.id), "name": user.name, "email": user.email}, "tenant": {"id": str(tenant.id), "name": tenant.name, "plan": tenant.plan}}
 
 
 async def _scope(claims: dict = Depends(current_claims)) -> tuple[UUID, UUID, str]:
@@ -163,10 +216,39 @@ async def analysis_events(
             events = list((await session.scalars(select(AnalysisEvent).where(AnalysisEvent.analysis_id == analysis_id, AnalysisEvent.tenant_id == tenant_id, AnalysisEvent.id > cursor).order_by(AnalysisEvent.id).limit(50))).all())
             for event in events:
                 cursor = event.id
-                yield f"id: {event.id}\\nevent: {event.event_type}\\ndata: {event.payload_json}\\n\\n"
+                yield f"id: {event.id}\nevent: {event.event_type}\ndata: {event.payload_json}\n\n"
             await asyncio.sleep(1)
 
     return StreamingResponse(stream(), media_type="text/event-stream", headers={"Cache-Control": "no-cache", "Connection": "keep-alive"})
+
+
+@router.get("/analyses/{analysis_id}/comments", response_model=list[CommentOut])
+async def list_comments(
+    analysis_id: UUID,
+    scope: tuple[UUID, UUID, str] = Depends(_scope),
+    session: AsyncSession = Depends(get_session),
+):
+    tenant_id, _, _ = scope
+    rows = list((await session.scalars(select(Comment).where(Comment.tenant_id == tenant_id, Comment.analysis_id == analysis_id).order_by(Comment.created_at.asc()))).all())
+    return rows
+
+
+@router.post("/analyses/{analysis_id}/comments", response_model=CommentOut, status_code=201)
+async def create_comment(
+    analysis_id: UUID,
+    payload: CommentIn,
+    scope: tuple[UUID, UUID, str] = Depends(_scope),
+    session: AsyncSession = Depends(get_session),
+):
+    tenant_id, user_id, _ = scope
+    analysis = await session.scalar(select(Analysis.id).where(Analysis.id == analysis_id, Analysis.tenant_id == tenant_id))
+    if not analysis:
+        raise HTTPException(404, detail={"code": "ANALYSIS_NOT_FOUND", "message": "Analysis not found"})
+    comment = Comment(tenant_id=tenant_id, analysis_id=analysis_id, author_id=user_id, text=payload.text.strip())
+    session.add(comment)
+    await session.commit()
+    await session.refresh(comment)
+    return comment
 
 
 @router.get("/policies")
