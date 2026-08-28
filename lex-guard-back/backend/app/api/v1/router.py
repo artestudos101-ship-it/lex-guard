@@ -1,14 +1,18 @@
+import asyncio
+import json
 from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.auth import current_claims
 from app.core.database import get_session
-from app.models import Analysis, AnalysisDocument, Document
+from app.models import Analysis, AnalysisDocument, AnalysisEvent, Document, Evidence, Finding, Rule
+from app.worker import enqueue_analysis
 
 router = APIRouter()
 
@@ -101,8 +105,14 @@ async def create_analysis(
     session.add(analysis)
     await session.flush()
     session.add_all([AnalysisDocument(analysis_id=analysis.id, document_id=doc_id) for doc_id in payload.document_ids])
+    session.add(AnalysisEvent(tenant_id=tenant_id, analysis_id=analysis.id, event_type="queued", payload_json=json.dumps({"progress": 0})))
     await session.commit()
     await session.refresh(analysis)
+    try:
+        await enqueue_analysis(str(analysis.id), str(tenant_id))
+    except Exception:
+        # Persistence remains successful; readiness can report queue degradation.
+        pass
     return AnalysisOut(id=analysis.id, status=analysis.status, progress=analysis.progress, document_ids=payload.document_ids, created_at=analysis.created_at)
 
 
@@ -135,6 +145,47 @@ async def get_analysis(
     return AnalysisOut(id=analysis.id, status=analysis.status, progress=analysis.progress, document_ids=ids, created_at=analysis.created_at)
 
 
+@router.get("/analyses/{analysis_id}/events")
+async def analysis_events(
+    analysis_id: UUID,
+    after: int = Query(0, ge=0),
+    scope: tuple[UUID, UUID, str] = Depends(_scope),
+    session: AsyncSession = Depends(get_session),
+):
+    tenant_id, _, _ = scope
+    exists = await session.scalar(select(Analysis.id).where(Analysis.id == analysis_id, Analysis.tenant_id == tenant_id))
+    if not exists:
+        raise HTTPException(404, detail={"code": "ANALYSIS_NOT_FOUND", "message": "Analysis not found"})
+
+    async def stream():
+        cursor = after
+        for _ in range(120):
+            events = list((await session.scalars(select(AnalysisEvent).where(AnalysisEvent.analysis_id == analysis_id, AnalysisEvent.tenant_id == tenant_id, AnalysisEvent.id > cursor).order_by(AnalysisEvent.id).limit(50))).all())
+            for event in events:
+                cursor = event.id
+                yield f"id: {event.id}\\nevent: {event.event_type}\\ndata: {event.payload_json}\\n\\n"
+            await asyncio.sleep(1)
+
+    return StreamingResponse(stream(), media_type="text/event-stream", headers={"Cache-Control": "no-cache", "Connection": "keep-alive"})
+
+
 @router.get("/policies")
-async def policies():
-    return {"data": [], "meta": {"total": 0}}
+async def policies(
+    scope: tuple[UUID, UUID, str] = Depends(_scope),
+    session: AsyncSession = Depends(get_session),
+):
+    tenant_id, _, _ = scope
+    rules = list((await session.scalars(select(Rule).where(Rule.tenant_id == tenant_id, Rule.active.is_(True)).order_by(Rule.code))).all())
+    return {"data": [{"id": str(rule.id), "code": rule.code, "name": rule.name, "description": rule.description, "severity": rule.severity} for rule in rules], "meta": {"total": len(rules)}}
+
+
+@router.get("/analyses/{analysis_id}/evidences")
+async def evidences(
+    analysis_id: UUID,
+    scope: tuple[UUID, UUID, str] = Depends(_scope),
+    session: AsyncSession = Depends(get_session),
+):
+    tenant_id, _, _ = scope
+    finding_ids = select(Finding.id).where(Finding.tenant_id == tenant_id, Finding.analysis_id == analysis_id)
+    rows = list((await session.scalars(select(Evidence).where(Evidence.tenant_id == tenant_id, Evidence.finding_id.in_(finding_ids)))).all())
+    return {"data": [{"id": str(row.id), "finding_id": str(row.finding_id), "document_id": str(row.document_id), "page": row.page, "quote": row.quote, "confidence": row.confidence} for row in rows], "meta": {"analysis_id": str(analysis_id), "total": len(rows)}}

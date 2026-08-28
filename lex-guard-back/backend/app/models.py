@@ -60,6 +60,16 @@ class AnalysisDocument(Base):
     document_id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True)
 
 
+class AnalysisEvent(Base):
+    __tablename__ = "analysis_events"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), index=True)
+    analysis_id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), index=True)
+    event_type: Mapped[str] = mapped_column(String(64))
+    payload_json: Mapped[str] = mapped_column(Text(), default="{}")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
 class Finding(Base):
     __tablename__ = "findings"
     id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, default=uuid4)
@@ -69,6 +79,30 @@ class Finding(Base):
     title: Mapped[str] = mapped_column(String(255))
     explanation: Mapped[str] = mapped_column(Text())
     evidence_quality: Mapped[str] = mapped_column(String(8), default="E2")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class Rule(Base):
+    __tablename__ = "rules"
+    id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, default=uuid4)
+    tenant_id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), index=True)
+    code: Mapped[str] = mapped_column(String(80))
+    name: Mapped[str] = mapped_column(String(255))
+    description: Mapped[str] = mapped_column(Text(), default="")
+    severity: Mapped[str] = mapped_column(String(32), default="MEDIUM")
+    active: Mapped[bool] = mapped_column(default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class Evidence(Base):
+    __tablename__ = "evidences"
+    id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, default=uuid4)
+    tenant_id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), index=True)
+    finding_id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), index=True)
+    document_id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), index=True)
+    page: Mapped[int | None] = mapped_column(Integer)
+    quote: Mapped[str] = mapped_column(Text())
+    confidence: Mapped[float] = mapped_column()
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 

@@ -16,6 +16,7 @@ import { getRuntimeAnalysis, hydrateRuntime, subscribeRuntime } from "@/services
 import { MOCK_ANALYSES } from "@/mock/analyses"
 import { runtimeFromMock } from "../analysis-data"
 import type { RuntimeAnalysis } from "@/types/analysis-runtime"
+import { useAnalysisEvents } from "@/hooks/use-analysis-events"
 
 const filterOptions = ["Todos", "Evidências", "Riscos", "Políticas", "Decisão"] as const
 const modes = ["Documento", "Processo", "Decisão"] as const
@@ -28,6 +29,7 @@ export function AnalysisWorkspace({ analysisId }: { analysisId: string }) {
   const [highlight, setHighlight] = useState<string | null>(null)
   const [documentOpen, setDocumentOpen] = useState(true)
   const [decisionOpen, setDecisionOpen] = useState(true)
+  const { events, connected } = useAnalysisEvents(analysisId)
 
   useEffect(() => {
     hydrateRuntime()
@@ -90,6 +92,7 @@ export function AnalysisWorkspace({ analysisId }: { analysisId: string }) {
             <p className="truncate text-xs text-muted-foreground">{analysis.orgao} · {analysis.id}</p>
           </div>
           <Badge variant="secondary">{analysis.status === "completed" ? "Concluída" : "Em análise"}</Badge>
+          {events.length > 0 && <Badge variant="outline">{connected ? "Eventos ao vivo" : "Reconectando"} · {events.length}</Badge>}
           <Button variant="outline" size="sm">
             <ShieldCheck data-icon="inline-start" /> {analysis.policyName}
           </Button>
