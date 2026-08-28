@@ -2,11 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
-<<<<<<< HEAD
 import { ChevronLeft, ChevronRight, FileText, MessageSquare, Plus, Sparkles } from "lucide-react"
-=======
-import { ArrowRight, FileText, MessageSquare, Plus, Sparkles } from "lucide-react"
->>>>>>> c2b5b919d787ff80bc8acf75c985ad5beb80db5c
 import { toast } from "sonner"
 import { AppShell } from "@/components/shell/app-shell"
 import { Button } from "@/components/ui/button"
@@ -15,11 +11,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { AnalysisCard } from "@/features/analyses/components/analysis-card"
 import { AnalysisFilters, defaultAnalysisFilters, type AnalysisFilterState } from "@/features/analyses/components/analysis-filters"
-<<<<<<< HEAD
 import { AnalysisChat } from "@/features/analyses/components/analysis-chat"
 import { DecisionContext } from "@/features/analyses/components/decision-context"
-=======
->>>>>>> c2b5b919d787ff80bc8acf75c985ad5beb80db5c
 import { AnalysisSearch } from "@/features/analyses/components/analysis-search"
 import { runtimeFromMock } from "@/features/analyses/analysis-data"
 import { getRuntimeAnalysis, hydrateRuntime, listRuntimeAnalyses, subscribeRuntime } from "@/services/analysis-runtime"
@@ -43,11 +36,8 @@ export default function AnalysesPage() {
   const [query, setQuery] = useState("")
   const [filters, setFilters] = useState<AnalysisFilterState>(defaultAnalysisFilters)
   const [hidden, setHidden] = useState<Set<string>>(new Set())
-<<<<<<< HEAD
   const [conversationsOpen, setConversationsOpen] = useState(true)
   const [contextOpen, setContextOpen] = useState(true)
-=======
->>>>>>> c2b5b919d787ff80bc8acf75c985ad5beb80db5c
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -58,11 +48,8 @@ export default function AnalysesPage() {
       team: params.get("team") ?? "",
     }
     setFilters(initial)
-<<<<<<< HEAD
     const requestedAnalysis = params.get("analysis")
     if (requestedAnalysis) setSelectedId(requestedAnalysis)
-=======
->>>>>>> c2b5b919d787ff80bc8acf75c985ad5beb80db5c
     setAnalyses(loadAnalyses())
     const unsubscribe = subscribeRuntime(() => setAnalyses(loadAnalyses()))
     return () => { unsubscribe() }
@@ -123,7 +110,6 @@ export default function AnalysesPage() {
     toast.success("Responsável atualizado", { description: `${analysis.responsible} permanece como responsável. A integração com usuários reais ficará no backend.` })
   }
 
-<<<<<<< HEAD
   return <AppShell title="Minhas análises" action={<Button size="sm" render={<Link href="/analyses/new" />}><Plus data-icon="inline-start" /> Nova análise</Button>}>
     <div className="mx-auto flex max-w-[1550px] flex-col gap-5">
       <div><p className="font-mono text-[10px] uppercase tracking-[0.18em] text-primary">Workspace central</p><h2 className="mt-2 text-3xl font-semibold tracking-[-0.04em]">Minhas análises</h2></div>
@@ -131,16 +117,6 @@ export default function AnalysesPage() {
         {conversationsOpen ? <aside className="flex min-h-0 flex-col overflow-hidden border-b transition-[width,opacity] duration-300 ease-in-out lg:border-b-0 lg:border-r"><div className="border-b p-3"><div className="flex items-center gap-2"><div className="min-w-0 flex-1 lg:max-xl:hidden"><p className="text-sm font-semibold">Conversas</p><p className="text-xs text-muted-foreground">{visible.length} análises visíveis</p></div><Sparkles className="size-4 text-primary" /><Button variant="ghost" size="icon-sm" aria-label="Recolher conversas" onClick={() => setConversationsOpen(false)}><ChevronLeft /></Button></div><div className="mt-3 lg:max-xl:hidden"><AnalysisSearch analyses={analyses} value={query} onValueChange={setQuery} /></div></div><ScrollArea className="min-h-0 flex-1 lg:max-xl:hidden"><div className="flex flex-col gap-1 p-2">{visible.map((analysis) => <button key={analysis.id} type="button" onClick={() => setSelectedId(analysis.id)} className={`rounded-lg p-3 text-left transition-colors ${analysis.id === selected?.id ? "bg-primary/10" : "hover:bg-muted/50"}`}><div className="flex items-start gap-3"><div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-md bg-muted text-primary"><MessageSquare className="size-4" /></div><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{analysis.title}</p><p className="mt-1 truncate text-xs text-muted-foreground">{analysis.orgao}</p><div className="mt-2 flex gap-2"><Badge variant="outline" className="text-[10px]">{analysis.status === "processing" ? `${analysis.progress}%` : analysis.status === "completed" ? "Concluída" : "Na fila"}</Badge><span className="font-mono text-[10px] text-muted-foreground">{analysis.id}</span></div></div></div></button>)}</div></ScrollArea></aside> : <div className="flex min-h-0 items-start justify-center border-b p-2 lg:border-b-0 lg:border-r"><Button variant="ghost" size="icon" aria-label="Abrir conversas" onClick={() => setConversationsOpen(true)}><MessageSquare /></Button></div>}
         <main className="min-w-0 min-h-0 overflow-hidden"><div className="flex h-full min-h-0 flex-col"><div className="flex shrink-0 items-center justify-between gap-3 border-b p-3"><div><p className="text-sm font-semibold">Conversa</p><p className="text-xs text-muted-foreground">Chat direto sobre a análise selecionada</p></div><AnalysisFilters value={filters} onChange={applyFilters} /></div>{selected ? <AnalysisChat analysis={selected} /> : <div className="flex min-h-0 flex-1 items-center justify-center p-6"><Card><CardContent className="flex min-h-72 flex-col items-center justify-center gap-3 text-center"><FileText className="size-8 text-muted-foreground" /><CardTitle>Nenhuma análise encontrada</CardTitle><p className="max-w-md text-sm text-muted-foreground">Ajuste a busca/filtros ou inicie uma nova análise.</p><Button render={<Link href="/analyses/new" />}><Plus data-icon="inline-start" /> Nova análise</Button></CardContent></Card></div>}</div></main>
         {contextOpen ? <aside className="flex min-h-0 flex-col overflow-hidden border-t bg-muted/10 transition-[width,opacity] duration-300 ease-in-out lg:border-l lg:border-t-0"><div className="flex items-center gap-2 border-b p-3"><FileText className="size-4 shrink-0 text-primary" /><div className="min-w-0 flex-1 lg:max-xl:hidden"><p className="text-sm font-semibold">Contexto</p><p className="text-xs text-muted-foreground">Resumo da decisão</p></div><Button variant="ghost" size="icon-sm" aria-label="Recolher contexto" onClick={() => setContextOpen(false)}><ChevronRight /></Button></div><ScrollArea className="min-h-0 flex-1 lg:max-xl:hidden"><div className="p-3">{selected ? <DecisionContext analysis={selected} /> : null}</div></ScrollArea></aside> : <div className="flex min-h-0 items-start justify-center border-t p-2 lg:border-l lg:border-t-0"><Button variant="ghost" size="icon" aria-label="Abrir contexto" onClick={() => setContextOpen(true)}><FileText /></Button></div>}
-=======
-  return <AppShell title="Minhas análises" description="Análise + processo + evidência + decisão" action={<Button size="sm" render={<Link href="/analyses/new" />}><Plus data-icon="inline-start" /> Nova análise</Button>}>
-    <div className="mx-auto flex max-w-[1550px] flex-col gap-5">
-      <div><p className="font-mono text-[10px] uppercase tracking-[0.18em] text-primary">Workspace central</p><h2 className="mt-2 text-3xl font-semibold tracking-[-0.04em]">Minhas análises</h2><p className="mt-2 text-sm leading-6 text-muted-foreground">Acompanhe oportunidades, processos em andamento e decisões da sua equipe.</p></div>
-      <div className="grid min-h-[720px] overflow-hidden rounded-xl border bg-card shadow-sm lg:grid-cols-[310px_1fr]">
-        <aside className="flex min-h-0 flex-col border-b lg:border-b-0 lg:border-r"><div className="border-b p-4"><div className="flex items-center justify-between"><div><p className="text-sm font-semibold">Conversas</p><p className="text-xs text-muted-foreground">{visible.length} análises visíveis</p></div><Sparkles className="size-4 text-primary" /></div><div className="mt-3"><AnalysisSearch analyses={analyses} value={query} onValueChange={setQuery} /></div></div><ScrollArea className="flex-1"><div className="flex flex-col gap-1 p-2">{visible.map((analysis) => <button key={analysis.id} type="button" onClick={() => setSelectedId(analysis.id)} className={`rounded-lg p-3 text-left transition-colors ${analysis.id === selected?.id ? "bg-primary/10" : "hover:bg-muted/50"}`}><div className="flex items-start gap-3"><div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-md bg-muted text-primary"><MessageSquare className="size-4" /></div><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{analysis.title}</p><p className="mt-1 truncate text-xs text-muted-foreground">{analysis.orgao}</p><div className="mt-2 flex gap-2"><Badge variant="outline" className="text-[10px]">{analysis.status === "processing" ? `${analysis.progress}%` : analysis.status === "completed" ? "Concluída" : "Na fila"}</Badge><span className="font-mono text-[10px] text-muted-foreground">{analysis.id}</span></div></div></div></button>)}</div></ScrollArea></aside>
-        <main className="min-w-0"><div className="flex items-center justify-between gap-3 border-b p-4"><div><p className="text-sm font-semibold">Análises</p><p className="text-xs text-muted-foreground">Cards orientados ao processo</p></div><AnalysisFilters value={filters} onChange={applyFilters} /></div><ScrollArea className="h-[calc(720px-70px)]"><div className="flex flex-col gap-5 p-5">
-          {selected ? <><AnalysisCard analysis={selected} onStart={() => handleStart(selected.id)} onRetry={() => handleStart(selected.id)} onAction={(action) => handleAction(action, selected)} /><div className="flex items-center justify-between"><div><p className="text-sm font-semibold">Outras análises</p><p className="text-xs text-muted-foreground">Continue o trabalho diretamente pelo card ou abra a conversa completa.</p></div><Button variant="outline" size="sm" render={<Link href={`/analyses/${selected.id}`} />}>Abrir workspace <ArrowRight data-icon="inline-end" /></Button></div><div className="grid gap-4 xl:grid-cols-2">{visible.filter((item) => item.id !== selected.id).map((analysis) => <AnalysisCard key={analysis.id} analysis={analysis} onStart={() => handleStart(analysis.id)} onRetry={() => handleStart(analysis.id)} onAction={(action) => handleAction(action, analysis)} />)}</div></> : <Card><CardContent className="flex min-h-96 flex-col items-center justify-center gap-3 text-center"><FileText className="size-8 text-muted-foreground" /><CardTitle>Nenhuma análise encontrada</CardTitle><p className="max-w-md text-sm text-muted-foreground">Ajuste a busca/filtros ou inicie uma nova análise.</p><Button render={<Link href="/analyses/new" />}><Plus data-icon="inline-start" /> Nova análise</Button></CardContent></Card>}
-        </div></ScrollArea></main>
->>>>>>> c2b5b919d787ff80bc8acf75c985ad5beb80db5c
       </div>
     </div>
   </AppShell>
