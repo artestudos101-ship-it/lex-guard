@@ -129,9 +129,13 @@ async def _scope(claims: dict = Depends(current_claims)) -> tuple[UUID, UUID, st
 
 
 @router.get("/me")
-async def me(scope: tuple[UUID, UUID, str] = Depends(_scope)):
+async def me(scope: tuple[UUID, UUID, str] = Depends(_scope), session: AsyncSession = Depends(get_session)):
     tenant_id, user_id, role = scope
-    return {"id": str(user_id), "tenant_id": str(tenant_id), "role": role, "permissions": ["*"] if role == "owner" else ["read"]}
+    user = await session.scalar(select(User).where(User.id == user_id, User.tenant_id == tenant_id))
+    tenant = await session.scalar(select(Tenant).where(Tenant.id == tenant_id))
+    if not user or not tenant:
+        raise HTTPException(401, detail={"code": "SESSION_NOT_FOUND", "message": "Session is no longer valid"})
+    return {"id": str(user.id), "tenant_id": str(tenant.id), "name": user.name, "email": user.email, "role": role, "permissions": ["*"] if role == "owner" else ["read"], "tenant": {"id": str(tenant.id), "name": tenant.name, "plan": tenant.plan}}
 
 
 @router.post("/documents", response_model=DocumentOut, status_code=201)
