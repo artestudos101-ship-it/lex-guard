@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     ollama_model: str = "qwen2.5-vl"
     ollama_timeout_seconds: int = 120
     ollama_enabled: bool = True
+    seed_demo: bool = True
 
 
 @lru_cache

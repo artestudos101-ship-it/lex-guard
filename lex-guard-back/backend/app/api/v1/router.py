@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.auth import create_access_token, current_claims, hash_password, verify_password
 from app.core.database import get_session
 from app.core.config import settings
-from app.models import Analysis, AnalysisDocument, AnalysisEvent, Comment, Decision, Document, Evidence, Finding, Report, Rule, Tenant, User
+from app.models import Analysis, AnalysisDocument, AnalysisEvent, Assignment, Comment, Decision, Document, Evidence, Finding, Report, Rule, Tenant, User
 from app.worker import enqueue_analysis
 
 router = APIRouter()
@@ -70,6 +70,22 @@ class DecisionIn(BaseModel):
     rationale: str = Field(default="", max_length=4000)
 
 
+class AssignmentIn(BaseModel):
+    assignee_id: UUID
+    status: str = Field(default="open", pattern="^(open|in_progress|done)$")
+    due_date: datetime | None = None
+
+
+class FindingOut(BaseModel):
+    id: UUID
+    analysis_id: UUID
+    severity: str
+    title: str
+    explanation: str
+    evidence_quality: str
+    created_at: datetime
+
+
 @router.post("/auth/register")
 async def register(payload: RegisterIn, response: Response, session: AsyncSession = Depends(get_session)):
     existing = await session.scalar(select(User).where(User.email == payload.email.lower()))
@@ -83,7 +99,7 @@ async def register(payload: RegisterIn, response: Response, session: AsyncSessio
     await session.commit()
     token = create_access_token(str(user.id), str(tenant.id), user.role)
     response.set_cookie("lexguard_session", token, httponly=True, secure=False, samesite="lax", max_age=28800)
-    return {"access_token": token, "token_type": "bearer", "user": {"id": str(user.id), "name": user.name, "email": user.email}, "tenant": {"id": str(tenant.id), "name": tenant.name, "plan": tenant.plan}}
+    return {"access_token": token, "token_type": "bearer", "user": {"id": str(user.id), "name": user.name, "email": user.email, "role": user.role}, "tenant": {"id": str(tenant.id), "name": tenant.name, "plan": tenant.plan}}
 
 
 @router.post("/auth/logout")
@@ -102,7 +118,7 @@ async def login(payload: LoginIn, response: Response, session: AsyncSession = De
         raise HTTPException(401, detail={"code": "TENANT_NOT_FOUND", "message": "Unable to sign in"})
     token = create_access_token(str(user.id), str(tenant.id), user.role)
     response.set_cookie("lexguard_session", token, httponly=True, secure=False, samesite="lax", max_age=28800)
-    return {"access_token": token, "token_type": "bearer", "user": {"id": str(user.id), "name": user.name, "email": user.email}, "tenant": {"id": str(tenant.id), "name": tenant.name, "plan": tenant.plan}}
+    return {"access_token": token, "token_type": "bearer", "user": {"id": str(user.id), "name": user.name, "email": user.email, "role": user.role}, "tenant": {"id": str(tenant.id), "name": tenant.name, "plan": tenant.plan}}
 
 
 async def _scope(claims: dict = Depends(current_claims)) -> tuple[UUID, UUID, str]:
@@ -213,6 +229,33 @@ async def get_analysis(
         raise HTTPException(404, detail={"code": "ANALYSIS_NOT_FOUND", "message": "Analysis not found"})
     ids = list((await session.scalars(select(AnalysisDocument.document_id).where(AnalysisDocument.analysis_id == analysis.id))).all())
     return AnalysisOut(id=analysis.id, status=analysis.status, progress=analysis.progress, document_ids=ids, created_at=analysis.created_at)
+
+
+@router.get("/analyses/{analysis_id}/findings", response_model=list[FindingOut])
+async def list_findings(analysis_id: UUID, scope: tuple[UUID, UUID, str] = Depends(_scope), session: AsyncSession = Depends(get_session)):
+    tenant_id, _, _ = scope
+    return list((await session.scalars(select(Finding).where(Finding.analysis_id == analysis_id, Finding.tenant_id == tenant_id).order_by(Finding.created_at))).all())
+
+
+@router.get("/analyses/{analysis_id}/assignments")
+async def list_assignments(analysis_id: UUID, scope: tuple[UUID, UUID, str] = Depends(_scope), session: AsyncSession = Depends(get_session)):
+    tenant_id, _, _ = scope
+    rows = list((await session.scalars(select(Assignment).where(Assignment.analysis_id == analysis_id, Assignment.tenant_id == tenant_id).order_by(Assignment.created_at))).all())
+    return {"data": [{"id": str(row.id), "analysis_id": str(row.analysis_id), "assignee_id": str(row.assignee_id), "status": row.status, "due_date": row.due_date, "created_at": row.created_at} for row in rows], "meta": {"total": len(rows)}}
+
+
+@router.post("/analyses/{analysis_id}/assignments")
+async def create_assignment(analysis_id: UUID, payload: AssignmentIn, scope: tuple[UUID, UUID, str] = Depends(_scope), session: AsyncSession = Depends(get_session)):
+    tenant_id, _, _ = scope
+    exists = await session.scalar(select(Analysis.id).where(Analysis.id == analysis_id, Analysis.tenant_id == tenant_id))
+    assignee = await session.scalar(select(User.id).where(User.id == payload.assignee_id, User.tenant_id == tenant_id))
+    if not exists or not assignee:
+        raise HTTPException(404, detail={"code": "RESOURCE_NOT_FOUND", "message": "Analysis or assignee not found"})
+    row = Assignment(tenant_id=tenant_id, analysis_id=analysis_id, assignee_id=payload.assignee_id, status=payload.status, due_date=payload.due_date)
+    session.add(row)
+    await session.commit()
+    await session.refresh(row)
+    return {"id": str(row.id), "analysis_id": str(row.analysis_id), "assignee_id": str(row.assignee_id), "status": row.status, "due_date": row.due_date, "created_at": row.created_at}
 
 
 @router.get("/analyses/{analysis_id}/decision")
