@@ -12,7 +12,8 @@ def async_database_url(value: str) -> str:
         normalized = "postgresql+asyncpg://" + normalized.removeprefix("postgres://")
     elif normalized.startswith("postgresql://"):
         normalized = "postgresql+asyncpg://" + normalized.removeprefix("postgresql://")
-    return normalized.replace("&channel_binding=require", "").replace("?channel_binding=require", "?")
+    normalized = normalized.replace("&channel_binding=require", "").replace("?channel_binding=require", "?")
+    return normalized.replace("sslmode=require", "ssl=require")
 
 
 engine = create_async_engine(async_database_url(settings.database_url), pool_pre_ping=True)
