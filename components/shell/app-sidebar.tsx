@@ -8,7 +8,7 @@ import { AccountMenu } from "./account-menu"
 import { DEMO_TENANT, PRODUCT_TAGLINE, PRODUCT_NAME } from "@/types/organization"
 
 const GROUPS = [
-  { label: "Visão geral", items: [{ title: "Painel", href: "/", icon: LayoutDashboard }] },
+  { label: "Visão geral", items: [{ title: "Painel", href: "/dashboard", icon: LayoutDashboard }] },
   { label: "Execução", items: [{ title: "Minhas análises", href: "/analyses", icon: FileSearch }, { title: "Pacotes de decisão", href: "/reports", icon: FileStack }] },
   { label: "Governança", items: [{ title: "Políticas de risco", href: "/policies", icon: ShieldCheck }, { title: "Avaliação", href: "/evaluation", icon: Gauge }] },
   { label: "Equipe", items: [{ title: "Times", href: "/teams", icon: UsersRound }, { title: "Usuários", href: "/users", icon: Users }, { title: "Atividade", href: "/activity", icon: Activity }] },
