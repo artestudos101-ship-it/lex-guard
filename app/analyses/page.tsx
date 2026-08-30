@@ -40,6 +40,13 @@ export default function AnalysesPage() {
   const [contextOpen, setContextOpen] = useState(true)
 
   useEffect(() => {
+    if (window.matchMedia("(max-width: 767px)").matches) {
+      setConversationsOpen(false)
+      setContextOpen(false)
+    }
+  }, [])
+
+  useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const initial: AnalysisFilterState = {
       statuses: params.get("status")?.split(",").filter(Boolean) ?? [],
