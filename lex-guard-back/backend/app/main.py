@@ -7,10 +7,15 @@ from fastapi.responses import JSONResponse
 
 from app.api.v1.router import router as v1_router
 from app.core.config import settings
+from app.core.database import init_database
+from app.seed_demo import seed as seed_demo
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    await init_database()
+    if settings.seed_demo:
+        await seed_demo()
     yield
 
 

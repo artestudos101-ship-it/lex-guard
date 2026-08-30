@@ -34,7 +34,7 @@ export const DEMO_COMMENTS: Comment[] = [{ id: "c1", author: "Ana Beatriz", init
 
 export const STATUS_LABELS = { done: "Concluído", active: "Em processamento", pending: "Na fila", error: "Falhou" } as const
 export const FEATURE_FLAGS = { collaboration: true, sseEvents: true, policyHistory: true, commandSearch: true } as const
-export const API_ADAPTER = { mode: "mock" as const, baseUrl: process.env.NEXT_PUBLIC_API_URL ?? "" }
+export const API_ADAPTER = { mode: (process.env.NEXT_PUBLIC_DATA_SOURCE === "api" || process.env.NEXT_PUBLIC_API_URL ? "api" : "mock") as "api" | "mock", baseUrl: process.env.NEXT_PUBLIC_API_URL ?? "" }
 export const TENANT_SCOPE = { tenantId: DEMO_TENANT.id }
 export const INVITE_ROLES: UserRole[] = ["admin", "reviewer", "viewer"]
 export const EVIDENCE_LABELS = { E1: "Alta confiança", E2: "Confiança média", E3: "Requer validação" } as const
