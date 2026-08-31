@@ -9,9 +9,10 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { applyGeminiResult, createRuntimeAnalysis } from "@/services/analysis-runtime"
+import { applyGeminiResult, createRuntimeAnalysis, updateRuntimeAnalysis } from "@/services/analysis-runtime"
 import { startAnalysisRuntime } from "@/services/analysis-orchestrator"
 import { MOCK_POLICIES } from "@/mock/policies"
+import { ExternalLink, Globe2 } from "lucide-react"
 
 const steps = ["Documentos", "Política", "Revisão", "Processamento"]
 const sampleDocuments = [
@@ -63,18 +64,23 @@ export function NewAnalysis() {
     }
     setIsStarting(true)
     const analysis = createRuntimeAnalysis({ title, orgao: "Secretaria de Estado da Saúde", policyId: selectedPolicy?.id ?? "pol_pme", policyName: selectedPolicy?.name ?? "Padrão PME", documentNames: documents.map((doc) => doc.name) })
+    startAnalysisRuntime(analysis.id)
     if (realFiles.length) {
       try {
-        const encoded = await Promise.all(realFiles.map(async (file) => ({ name: file.name, mimeType: "application/pdf" as const, data: await fileToBase64(file) })))
-        const response = await fetch("/api/analyze", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ title, policy: selectedPolicy?.name ?? "Padrão PME", documents: encoded }) })
+        const formData = new FormData()
+        formData.set("title", title)
+        formData.set("policy", selectedPolicy?.name ?? "Padrão PME")
+        realFiles.forEach((file) => formData.append("documents", file, file.name))
+        const response = await fetch("/api/analyze", { method: "POST", body: formData })
         const result = await response.json()
         if (!response.ok) throw new Error(result.error ?? "Gemini indisponível")
         applyGeminiResult(analysis.id, result)
+        const validationResponse = await fetch("/api/validate-document", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ title, documentText: result.evidence.map((item: { excerpt: string }) => item.excerpt).join("\n"), identifiers: {} }) })
+        if (validationResponse.ok) updateRuntimeAnalysis(analysis.id, { validationChecks: (await validationResponse.json()).checks })
       } catch (error) { toast.error("Análise Gemini não concluída", { description: error instanceof Error ? error.message : "Verifique a configuração do servidor." }); setIsStarting(false); return }
     }
-    startAnalysisRuntime(analysis.id)
-    toast.success("Análise iniciada", { description: "O card será atualizado em Minhas análises." })
-    router.push("/analyses")
+    router.push(`/analyses?analysis=${analysis.id}`)
+    if (!realFiles.length) toast.success("Análise demonstrativa iniciada", { description: "O chat acompanhará as etapas do processamento." })
   }
 
   const canContinue = step === 0 ? documents.length >= 1 : true
@@ -88,18 +94,19 @@ export function NewAnalysis() {
           <input ref={fileInputRef} type="file" accept="application/pdf" multiple className="sr-only" onChange={(event) => handleFiles(event.target.files)} />
           <div className="flex min-h-40 flex-col items-center justify-center gap-3 rounded-lg border border-dashed bg-muted/20 text-center"><div className="flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary"><UploadCloud /></div><span className="text-sm font-medium">{documents.length >= 3 ? "Limite de 3 documentos atingido" : "Adicionar documento"}</span><span className="text-xs text-muted-foreground">Envie um PDF real para o Gemini ou use um documento demonstrativo para testar o fluxo.</span><div className="flex flex-wrap justify-center gap-2"><Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={documents.length >= 3}>Enviar PDF real</Button><Button type="button" variant="secondary" size="sm" onClick={() => addDocument()} disabled={documents.length >= 3}>Usar demonstrativo</Button></div></div>
           <div className="grid gap-3 md:grid-cols-3">{documents.map((doc, index) => <div key={doc.name} className="rounded-lg border p-3"><div className="flex items-start gap-3"><div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary"><FileText className="size-4" /></div><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{doc.name}</p><p className="mt-1 text-xs text-muted-foreground">{doc.pages} páginas · {doc.size}</p><Badge className="mt-2" variant="secondary"><Check data-icon="inline-start" /> Válido</Badge></div><Button variant="ghost" size="icon" onClick={() => removeDocument(index)} aria-label={`Remover ${doc.name}`}><X /></Button></div></div>)}</div>
-        </> : step === 1 ? <div className="grid gap-3 md:grid-cols-3">{MOCK_POLICIES.map((policy) => <button key={policy.id} type="button" onClick={() => setPolicyId(policy.id)} className={`rounded-xl border p-4 text-left transition-colors ${policy.id === policyId ? "border-primary bg-primary/5 ring-1 ring-primary/20" : "hover:bg-muted/30"}`}><div className="flex items-start justify-between gap-3"><div><p className="text-sm font-semibold">{policy.name}</p><p className="mt-1 text-xs text-muted-foreground">Versão {policy.version}</p></div><ShieldCheck className="size-4 text-primary" /></div><div className="mt-4 grid gap-2 text-xs text-muted-foreground"><span>Prazo: ≥ {policy.rules.minDeadlineDays} dias</span><span>Garantia: ≤ {policy.rules.maxGuaranteePct}%</span><span>Multa: ≤ {policy.rules.maxPenaltyPct}%</span></div>{policy.id === policyId ? <Badge className="mt-4">Selecionada</Badge> : null}</button>)}</div> : step === 2 ? <div className="space-y-3"><SummaryRow label="Documentos" value={`${documents.length}`} /><SummaryRow label="Política" value={`${selectedPolicy?.name} · ${selectedPolicy?.version}`} /><SummaryRow label="Nome" value={title} /><SummaryRow label="Contexto" value="Documento + evidência + política + decisão" /></div> : <div className="rounded-xl border bg-muted/20 p-5"><p className="text-sm font-semibold">Tudo pronto.</p><p className="mt-1 text-sm text-muted-foreground">Ao iniciar, o serviço mock criará os jobs, atualizará o card e preencherá a conversa progressivamente.</p></div>}
+        </> : step === 1 ? <div className="grid gap-3 md:grid-cols-3">{MOCK_POLICIES.map((policy) => <button key={policy.id} type="button" onClick={() => setPolicyId(policy.id)} className={`rounded-xl border p-4 text-left transition-colors ${policy.id === policyId ? "border-primary bg-primary/5 ring-1 ring-primary/20" : "hover:bg-muted/30"}`}><div className="flex items-start justify-between gap-3"><div><p className="text-sm font-semibold">{policy.name}</p><p className="mt-1 text-xs text-muted-foreground">Versão {policy.version}</p></div><ShieldCheck className="size-4 text-primary" /></div><div className="mt-4 grid gap-2 text-xs text-muted-foreground"><span>Prazo: ≥ {policy.rules.minDeadlineDays} dias</span><span>Garantia: ≤ {policy.rules.maxGuaranteePct}%</span><span>Multa: ≤ {policy.rules.maxPenaltyPct}%</span></div>{policy.sources?.length ? <div className="mt-4 border-t pt-3"><p className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground"><Globe2 className="size-3" /> Fontes jurídicas públicas</p><div className="mt-2 flex flex-col gap-1">{policy.sources.map((source) => <a key={source.url} href={source.url} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-left text-[11px] text-primary hover:underline" onClick={(event) => event.stopPropagation()}>{source.label} <ExternalLink className="size-3" /></a>)}</div></div> : null}{policy.id === policyId ? <Badge className="mt-4">Selecionada</Badge> : null}</button>)}</div> : step === 2 ? <div className="space-y-3"><SummaryRow label="Documentos" value={`${documents.length}`} /><SummaryRow label="Política" value={`${selectedPolicy?.name} · ${selectedPolicy?.version}`} /><SummaryRow label="Nome" value={title} /><SummaryRow label="Contexto" value="Documento + evidência + política + decisão" /></div> : <div className="rounded-xl border bg-muted/20 p-5"><p className="text-sm font-semibold">Tudo pronto.</p><p className="mt-1 text-sm text-muted-foreground">Ao iniciar, o serviço mock criará os jobs, atualizará o card e preencherá a conversa progressivamente.</p></div>}
         <div className="flex items-center justify-between border-t pt-5"><Button variant="ghost" onClick={() => step === 0 ? router.push("/analyses") : setStep((current) => current - 1)}>Voltar</Button>{step < 3 ? <Button disabled={!canContinue} onClick={() => setStep((current) => current + 1)}>Continuar <ArrowRight data-icon="inline-end" /></Button> : <Button onClick={start} disabled={isStarting}>{isStarting ? "Processando documento..." : "Iniciar análise"} <ArrowRight data-icon="inline-end" /></Button>}</div>
       </CardContent></Card>
     </div>
   </AppShell>
 }
 async function fileToBase64(file: File) {
-  const bytes = new Uint8Array(await file.arrayBuffer())
-  let binary = ""
-  const chunkSize = 0x8000
-  for (let index = 0; index < bytes.length; index += chunkSize) binary += String.fromCharCode(...bytes.subarray(index, index + chunkSize))
-  return btoa(binary)
+  return await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => { const value = String(reader.result ?? ""); resolve(value.includes(",") ? value.slice(value.indexOf(",") + 1) : value) }
+    reader.onerror = () => reject(new Error("O navegador não conseguiu ler o arquivo selecionado."))
+    reader.readAsDataURL(file)
+  })
 }
 
 function SummaryRow({ label, value }: { label: string; value: string }) { return <div className="flex items-center justify-between rounded-lg border p-4"><span className="text-xs text-muted-foreground">{label}</span><span className="text-sm font-medium">{value}</span></div> }

@@ -9,6 +9,11 @@ export const MOCK_POLICIES: RiskPolicy[] = [
     status: "active",
     version: "v3.2",
     updatedAt: "2025-08-18T13:20:00.000Z",
+    sources: [
+      { label: "LGPD — Lei nº 13.709/2018", authority: "Planalto", url: "https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2018/lei/l13709.htm" },
+      { label: "Guia de Segurança da Informação para Agentes de Tratamento de Pequeno Porte", authority: "ANPD", url: "https://www.gov.br/anpd/pt-br/documentos-e-publicacoes/guias-e-orientacoes/guia-seguranca-da-informacao-para-agentes-de-tratamento-de-pequeno-porte" },
+      { label: "Marco Civil da Internet — Lei nº 12.965/2014", authority: "Planalto", url: "https://www.planalto.gov.br/ccivil_03/_ato2011-2014/2014/lei/l12965.htm" },
+    ],
     rules: {
       minDeadlineDays: 10,
       maxPenaltyPct: 10,

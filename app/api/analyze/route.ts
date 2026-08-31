@@ -20,13 +20,17 @@ const responseSchema = z.object({
   summary: z.string(),
 })
 
-const fallbackSchema = z.object({
-  recommendation: z.string(), riskScore: z.number(), evidenceQuality: z.string(), conflicts: z.array(z.any()).optional(), evidence: z.array(z.any()).optional(), summary: z.string(),
-})
+async function formPayload(request: Request) {
+  const form = await request.formData()
+  const files = form.getAll("documents").filter((value): value is File => value instanceof File)
+  const documents = await Promise.all(files.slice(0, 3).map(async (file) => ({ name: file.name, mimeType: "application/pdf" as const, data: Buffer.from(await file.arrayBuffer()).toString("base64") })))
+  return { title: String(form.get("title") ?? ""), policy: String(form.get("policy") ?? ""), documents }
+}
 
 export async function POST(request: Request) {
   try {
-    const payload = requestSchema.parse(await request.json())
+    const rawPayload = request.headers.get("content-type")?.includes("multipart/form-data") ? await formPayload(request) : await request.json()
+    const payload = requestSchema.parse(rawPayload)
     const apiKey = process.env.GEMINI_API_KEY
     if (!apiKey) return NextResponse.json({ error: "GEMINI_API_KEY não configurada no servidor." }, { status: 503 })
     const model = process.env.GEMINI_MODEL || "gemini-2.5-flash"
@@ -37,12 +41,19 @@ export async function POST(request: Request) {
     const result = await response.json() as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> }
     const text = result.candidates?.[0]?.content?.parts?.map((part) => part.text ?? "").join("").trim()
     if (!text) return NextResponse.json({ error: "Resposta vazia do Gemini." }, { status: 502 })
-    const parsed = responseSchema.safeParse(JSON.parse(text))
-    if (!parsed.success) {
-      const relaxed = fallbackSchema.parse(JSON.parse(text))
-      return NextResponse.json({ ...relaxed, conflicts: relaxed.conflicts ?? [], evidence: relaxed.evidence ?? [], source: "gemini" })
+    let json: unknown
+    try { json = JSON.parse(text) } catch { return NextResponse.json({ error: "O Gemini retornou uma resposta que não é JSON válido.", rawPreview: text.slice(0, 240) }, { status: 502 }) }
+    const raw = json as Record<string, unknown>
+    const normalized = {
+      ...raw,
+      recommendation: String(raw.recommendation ?? "REVIEW").toUpperCase().includes("REJECT") || String(raw.recommendation ?? "").toUpperCase().includes("REJEIT") ? "REJECT" : String(raw.recommendation ?? "").toUpperCase().includes("APPROV") || String(raw.recommendation ?? "").toUpperCase().includes("APROV") ? "APPROVE" : "REVIEW",
+      evidenceQuality: String(raw.evidenceQuality ?? "Baixa").toLowerCase().startsWith("a") ? "Alta" : String(raw.evidenceQuality ?? "").toLowerCase().startsWith("m") ? "Média" : "Baixa",
+      conflicts: Array.isArray(raw.conflicts) ? raw.conflicts.map((conflict) => { const item = conflict as Record<string, unknown>; const severity = String(item.severity ?? "medium").toLowerCase(); return { ...item, severity: severity.includes("high") || severity.includes("alto") ? "high" : severity.includes("low") || severity.includes("baixo") ? "low" : "medium" } }) : [],
+      evidence: Array.isArray(raw.evidence) ? raw.evidence : [],
     }
-    return NextResponse.json({ ...parsed.data, source: "gemini" })
+    const parsed = responseSchema.safeParse(normalized)
+    if (!parsed.success) return NextResponse.json({ error: "O Gemini retornou JSON fora do contrato esperado.", issues: parsed.error.issues }, { status: 502 })
+    return NextResponse.json({ ...parsed.data, source: "gemini", model, provider: "Google AI Studio / Gemini API" })
   } catch (error) {
     if (error instanceof z.ZodError) return NextResponse.json({ error: "Dados de análise inválidos.", issues: error.issues }, { status: 400 })
     return NextResponse.json({ error: "Falha ao executar a análise." }, { status: 500 })

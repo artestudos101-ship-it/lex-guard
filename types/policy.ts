@@ -29,4 +29,5 @@ export interface RiskPolicy {
   rules: PolicyRules
   history?: RiskPolicyVersion[]
   custom?: boolean
+  sources?: Array<{ label: string; url: string; authority: string }>
 }
