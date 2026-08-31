@@ -59,11 +59,7 @@ function buildBlocks(analysis: RuntimeAnalysis, event: JobEvent): AnalysisBlock[
     }
     case "EVIDENCE_VALIDATED": {
       completeBefore(5)
-      set({ ...baseBlock("analysis:evidence", "evidence", "Evidências encontradas", "Achados foram vinculados à página e cláusula de origem.", "completed"), step: 5, evidences: [
-        { id: "evidence:guarantee", label: "Garantia contratual · p. 37 · cláusula 14.2", kind: "evidence" },
-        { id: "evidence:deadline", label: "Prazo de proposta · p. 11 · cláusula 5.1", kind: "evidence" },
-        { id: "evidence:fine", label: "Multa moratória · p. 38 · cláusula 15.1", kind: "evidence" },
-      ], actions: ["evidence", "document"] })
+      set({ ...baseBlock("analysis:evidence", "evidence", "Evidências encontradas", "Achados foram vinculados à página e cláusula de origem.", "completed"), step: 5, evidences: (analysis.evidences?.length ? analysis.evidences : [{ id: "evidence:demo", label: "Evidência demonstrativa", kind: "evidence" }]).map((item) => ({ id: item.id, label: `${item.label}${"page" in item && item.page ? ` · p. ${item.page}` : ""}`, kind: "evidence" as const })), actions: ["evidence", "document"] })
       break
     }
     case "RULES_APPLIED": {
@@ -73,12 +69,12 @@ function buildBlocks(analysis: RuntimeAnalysis, event: JobEvent): AnalysisBlock[
         { id: "rule:R-004", label: "R-004 · Garantia máxima", kind: "rule" },
         { id: "rule:R-007", label: "R-007 · Multa máxima", kind: "rule" },
       ] })
-      set({ ...baseBlock("analysis:risk", "risk", "Risco identificado", "Garantia acima do limite da política e prazo abaixo do mínimo foram sinalizados para revisão.", "warning"), step: 7, metadata: { Impacto: "Alto", Conflitos: "2", Evidência: "Página 37" }, actions: ["evidence", "policy"] })
+      set({ ...baseBlock("analysis:risk", "risk", analysis.conflicts?.length ? "Conflitos identificados" : "Risco identificado", analysis.conflicts?.length ? analysis.conflicts.map((conflict) => conflict.title).join(" · ") : "Nenhum conflito foi identificado.", analysis.conflicts?.length ? "warning" : "completed"), step: 7, metadata: { Impacto: analysis.conflicts?.some((conflict) => conflict.severity === "high") ? "Alto" : "Moderado", Conflitos: String(analysis.conflicts?.length ?? 0), Evidências: String(analysis.evidenceCount) }, actions: ["evidence", "policy"] })
       break
     }
     case "DECISION_READY": {
       completeBefore(8)
-      set({ ...baseBlock("analysis:decision", "decision", "Recomendação preliminar", "A evidência disponível sustenta uma recomendação para revisão humana antes da decisão final.", "completed"), step: 8, metadata: { Recomendação: "REVISAR", "Risk Score": "54/100", Motivos: "2 conflitos · 1 evidência parcial" }, actions: ["decision"] })
+      set({ ...baseBlock("analysis:decision", "decision", "Recomendação do Gemini", analysis.summary ?? "A recomendação foi consolidada a partir das evidências disponíveis.", "completed"), step: 8, metadata: { Recomendação: analysis.recommendation, "Risk Score": `${analysis.riskScore}/100`, Motivos: `${analysis.conflictCount} conflitos · ${analysis.evidenceCount} evidências` }, actions: ["decision"] })
       set({ ...baseBlock("analysis:consolidation", "consolidation", "Decisão consolidada", "REVISAR — validação humana recomendada antes da decisão final.", "completed"), step: 9, metadata: { "Principais fatores": "Garantia acima do limite · Prazo abaixo do mínimo · Multa dentro do limite" }, actions: ["decision"] })
       break
     }
@@ -124,7 +120,8 @@ export function startAnalysisRuntime(analysisId: string): JobSimulationHandle[] 
       onComplete() {
         completedDocuments += 1
         if (completedDocuments === analysis.documentNames.length) {
-          updateRuntimeAnalysis(analysisId, { progress: 100, currentStep: "Decisão consolidada", status: "completed", riskScore: 54, recommendation: "REVIEW", evidenceCount: 3, conflictCount: 2 })
+          const completed = getRuntimeAnalysis(analysisId)
+          updateRuntimeAnalysis(analysisId, { progress: 100, currentStep: "Decisão consolidada", status: "completed", riskScore: completed?.riskScore ?? 54, recommendation: completed?.recommendation ?? "REVIEW", evidenceCount: completed?.evidenceCount ?? 3, conflictCount: completed?.conflictCount ?? 2 })
         }
       },
     }, { stepMs: 850 + index * 150 })
