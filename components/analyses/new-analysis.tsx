@@ -39,6 +39,16 @@ export function NewAnalysis() {
   }
 
   function start() {
+    if (title.trim().length < 3) {
+      toast.error("Dê um nome à análise", { description: "Use pelo menos 3 caracteres para identificar esta decisão." })
+      setStep(0)
+      return
+    }
+    if (!documents.length) {
+      toast.error("Adicione um documento antes de iniciar")
+      setStep(0)
+      return
+    }
     const analysis = createRuntimeAnalysis({ title, orgao: "Secretaria de Estado da Saúde", policyId: selectedPolicy?.id ?? "pol_pme", policyName: selectedPolicy?.name ?? "Padrão PME", documentNames: documents.map((doc) => doc.name) })
     startAnalysisRuntime(analysis.id)
     toast.success("Análise iniciada", { description: "O card será atualizado em Minhas análises." })
