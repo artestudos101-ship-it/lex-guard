@@ -65,10 +65,13 @@ export function NewAnalysis() {
     setIsStarting(true)
     const analysis = createRuntimeAnalysis({ title, orgao: "Secretaria de Estado da Saúde", policyId: selectedPolicy?.id ?? "pol_pme", policyName: selectedPolicy?.name ?? "Padrão PME", documentNames: documents.map((doc) => doc.name) })
     startAnalysisRuntime(analysis.id)
-    router.push(`/analyses?analysis=${analysis.id}`)
     if (realFiles.length) {
       try {
-        const response = await fetch("/api/analyze", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ title, policy: selectedPolicy?.name ?? "Padrão PME", documents: encodedDocuments }) })
+        const formData = new FormData()
+        formData.set("title", title)
+        formData.set("policy", selectedPolicy?.name ?? "Padrão PME")
+        realFiles.forEach((file) => formData.append("documents", file, file.name))
+        const response = await fetch("/api/analyze", { method: "POST", body: formData })
         const result = await response.json()
         if (!response.ok) throw new Error(result.error ?? "Gemini indisponível")
         applyGeminiResult(analysis.id, result)
@@ -76,6 +79,7 @@ export function NewAnalysis() {
         if (validationResponse.ok) updateRuntimeAnalysis(analysis.id, { validationChecks: (await validationResponse.json()).checks })
       } catch (error) { toast.error("Análise Gemini não concluída", { description: error instanceof Error ? error.message : "Verifique a configuração do servidor." }); setIsStarting(false); return }
     }
+    router.push(`/analyses?analysis=${analysis.id}`)
     if (!realFiles.length) toast.success("Análise demonstrativa iniciada", { description: "O chat acompanhará as etapas do processamento." })
   }
 
