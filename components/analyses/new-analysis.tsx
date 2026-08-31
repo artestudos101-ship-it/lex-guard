@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { applyGeminiResult, createRuntimeAnalysis } from "@/services/analysis-runtime"
+import { applyGeminiResult, createRuntimeAnalysis, updateRuntimeAnalysis } from "@/services/analysis-runtime"
 import { startAnalysisRuntime } from "@/services/analysis-orchestrator"
 import { MOCK_POLICIES } from "@/mock/policies"
 import { ExternalLink, Globe2 } from "lucide-react"
@@ -64,18 +64,19 @@ export function NewAnalysis() {
     }
     setIsStarting(true)
     const analysis = createRuntimeAnalysis({ title, orgao: "Secretaria de Estado da Saúde", policyId: selectedPolicy?.id ?? "pol_pme", policyName: selectedPolicy?.name ?? "Padrão PME", documentNames: documents.map((doc) => doc.name) })
+    startAnalysisRuntime(analysis.id)
+    router.push(`/analyses?analysis=${analysis.id}`)
     if (realFiles.length) {
       try {
-        const encoded = await Promise.all(realFiles.map(async (file) => ({ name: file.name, mimeType: "application/pdf" as const, data: await fileToBase64(file) })))
-        const response = await fetch("/api/analyze", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ title, policy: selectedPolicy?.name ?? "Padrão PME", documents: encoded }) })
+        const response = await fetch("/api/analyze", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ title, policy: selectedPolicy?.name ?? "Padrão PME", documents: encodedDocuments }) })
         const result = await response.json()
         if (!response.ok) throw new Error(result.error ?? "Gemini indisponível")
         applyGeminiResult(analysis.id, result)
+        const validationResponse = await fetch("/api/validate-document", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ title, documentText: result.evidence.map((item: { excerpt: string }) => item.excerpt).join("\n"), identifiers: {} }) })
+        if (validationResponse.ok) updateRuntimeAnalysis(analysis.id, { validationChecks: (await validationResponse.json()).checks })
       } catch (error) { toast.error("Análise Gemini não concluída", { description: error instanceof Error ? error.message : "Verifique a configuração do servidor." }); setIsStarting(false); return }
     }
-    startAnalysisRuntime(analysis.id)
-    toast.success("Análise iniciada", { description: "O card será atualizado em Minhas análises." })
-    router.push("/analyses")
+    if (!realFiles.length) toast.success("Análise demonstrativa iniciada", { description: "O chat acompanhará as etapas do processamento." })
   }
 
   const canContinue = step === 0 ? documents.length >= 1 : true
@@ -96,11 +97,12 @@ export function NewAnalysis() {
   </AppShell>
 }
 async function fileToBase64(file: File) {
-  const bytes = new Uint8Array(await file.arrayBuffer())
-  let binary = ""
-  const chunkSize = 0x8000
-  for (let index = 0; index < bytes.length; index += chunkSize) binary += String.fromCharCode(...bytes.subarray(index, index + chunkSize))
-  return btoa(binary)
+  return await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => { const value = String(reader.result ?? ""); resolve(value.includes(",") ? value.slice(value.indexOf(",") + 1) : value) }
+    reader.onerror = () => reject(new Error("O navegador não conseguiu ler o arquivo selecionado."))
+    reader.readAsDataURL(file)
+  })
 }
 
 function SummaryRow({ label, value }: { label: string; value: string }) { return <div className="flex items-center justify-between rounded-lg border p-4"><span className="text-xs text-muted-foreground">{label}</span><span className="text-sm font-medium">{value}</span></div> }
