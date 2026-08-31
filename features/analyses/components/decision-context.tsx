@@ -1,6 +1,7 @@
 "use client"
 
-import { ShieldAlert, Users } from "lucide-react"
+import { ExternalLink, ShieldAlert, Users } from "lucide-react"
+import { MOCK_POLICIES } from "@/mock/policies"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import type { RuntimeAnalysis } from "@/types/analysis-runtime"
@@ -14,7 +15,7 @@ export function DecisionContext({ analysis }: { analysis: RuntimeAnalysis }) {
       <div><p className="text-[10px] uppercase tracking-wide text-muted-foreground">Resumo do Gemini</p><p className="mt-2 rounded-lg border bg-muted/20 p-3 text-xs leading-5">{analysis.summary || "O resultado ainda está sendo consolidado."}</p></div>
       <div><p className="text-[10px] uppercase tracking-wide text-muted-foreground">Evidências do Gemini</p><div className="mt-2 space-y-2">{analysis.evidences?.length ? analysis.evidences.map((evidence) => <div key={evidence.id} className="rounded-lg border p-3"><p className="text-xs font-medium">{evidence.label}{evidence.page ? ` · p. ${evidence.page}` : ""}</p><p className="mt-1 text-xs leading-5 text-muted-foreground">{evidence.excerpt}</p></div>) : <p className="rounded-lg border p-3 text-xs text-muted-foreground">Nenhuma evidência foi retornada.</p>}</div></div>
       <div><p className="text-[10px] uppercase tracking-wide text-muted-foreground">Principais riscos</p><div className="mt-2 space-y-2">{analysis.conflicts?.length ? analysis.conflicts.map((conflict) => <RiskItem key={conflict.id} text={conflict.title} />) : <p className="rounded-lg border p-3 text-xs text-muted-foreground">Nenhum conflito identificado pelo Gemini.</p>}</div></div>
-      <div className="flex items-center justify-between"><div><p className="text-[10px] uppercase tracking-wide text-muted-foreground">Política</p><p className="mt-1 text-sm font-medium">{analysis.policyName}</p></div><Badge variant="outline">3 regras</Badge></div>
+      <div className="flex items-center justify-between"><div><p className="text-[10px] uppercase tracking-wide text-muted-foreground">Política</p><p className="mt-1 text-sm font-medium">{analysis.policyName}</p></div><Badge variant="outline">3 regras</Badge></div><div className="rounded-lg border bg-primary/5 p-3"><p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Base jurídica pública</p><div className="mt-2 flex flex-col gap-1">{MOCK_POLICIES.find((policy) => policy.name === analysis.policyName)?.sources?.map((source) => <a key={source.url} href={source.url} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-xs text-primary hover:underline">{source.label}<ExternalLink className="size-3" /></a>)}</div></div>
       <div className="flex items-center justify-between"><div><p className="text-[10px] uppercase tracking-wide text-muted-foreground">Conflitos</p><p className="mt-1 text-sm font-medium">{analysis.conflictCount}</p></div><div><p className="text-[10px] uppercase tracking-wide text-muted-foreground">Evidências</p><p className="mt-1 text-sm font-medium">{analysis.evidenceCount}</p></div></div>
       <div className="flex items-center gap-2 rounded-lg border p-3"><Users className="size-4 text-muted-foreground" /><div><p className="text-xs text-muted-foreground">Responsável</p><p className="text-sm font-medium">{analysis.responsible}</p></div></div>
     </CardContent></Card>

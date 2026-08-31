@@ -9,6 +9,13 @@ export interface RuntimeEvidence {
   excerpt: string
 }
 
+export interface PublicValidationCheck {
+  source: "PNCP" | "Receita Federal" | "Compras.gov.br"
+  status: "verified" | "warning" | "not_found" | "unavailable"
+  detail: string
+  url?: string
+}
+
 export interface RuntimeConflict {
   id: string
   title: string
@@ -32,4 +39,6 @@ export interface RuntimeAnalysis extends AnalysisSummary {
   evidences?: RuntimeEvidence[]
   conflicts?: RuntimeConflict[]
   chatMessages?: Array<{ role: "user" | "assistant"; content: string; createdAt: string }>
+  validationChecks?: PublicValidationCheck[]
+  sourceDocument?: { name: string; data: string; mimeType: "application/pdf" }
 }

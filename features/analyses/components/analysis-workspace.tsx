@@ -25,7 +25,7 @@ export function AnalysisWorkspace({ analysisId }: { analysisId: string }) {
   const [runtimeVersion, setRuntimeVersion] = useState(0)
   const [focus, setFocus] = useState<(typeof modes)[number]>("Processo")
   const [filter, setFilter] = useState<(typeof filterOptions)[number]>("Todos")
-  const [page, setPage] = useState(37)
+  const [page, setPage] = useState(1)
   const [highlight, setHighlight] = useState<string | null>(null)
   const [documentOpen, setDocumentOpen] = useState(true)
   const [decisionOpen, setDecisionOpen] = useState(true)
@@ -133,16 +133,16 @@ export function AnalysisWorkspace({ analysisId }: { analysisId: string }) {
                   <div className="mb-3 flex flex-wrap gap-2">
                     {docPages.map((doc) => <Badge key={doc.name} variant="outline">{doc.name} · {doc.pages}p</Badge>)}
                   </div>
-                  <div className="rounded-xl border bg-[#f5f6f8] p-4 text-slate-900 dark:bg-[#1b2330] dark:text-slate-100">
+                  <div className="rounded-xl border bg-muted/30 p-4">
                     <div className="flex items-center justify-between border-b pb-3 text-[10px] text-muted-foreground">
-                      <span>Página {page}</span><span>Zoom 100%</span>
+                      <span>Página {page}</span><div className="flex items-center gap-1"><Button variant="ghost" size="icon-sm" aria-label="Página anterior" disabled={page <= 1} onClick={() => setPage((current) => Math.max(1, current - 1))}><ChevronLeft /></Button><Button variant="ghost" size="icon-sm" aria-label="Próxima página" onClick={() => setPage((current) => current + 1)}><ChevronRight /></Button><span className="ml-2">Zoom 100%</span></div>
                     </div>
                     <div className="mx-auto mt-5 min-h-[520px] max-w-2xl rounded-lg bg-background p-6 shadow-sm">
                       <p className="font-serif text-xs uppercase tracking-wide text-muted-foreground">Cláusula 14.2 · Garantia de execução</p>
-                      <p className={`mt-5 rounded-md p-3 text-sm leading-7 ${activeFinding ? "bg-critical/10 ring-1 ring-critical/30" : ""}`}>
-                        <strong>A CONTRATADA prestará garantia correspondente a 5% (cinco por cento) do valor total do contrato.</strong> A garantia deverá ser apresentada no prazo previsto neste edital.
+                      <p className={`mt-5 rounded-md p-3 text-sm leading-7 ${analysis.evidences?.length ? "bg-critical/10 ring-1 ring-critical/30" : ""}`}>
+                        {analysis.evidences?.[0]?.excerpt || "O documento ainda não possui conteúdo extraído. Envie um PDF real para gerar evidências verificáveis."}
                       </p>
-                      <p className="mt-5 text-sm leading-7 text-muted-foreground">O percentual encontrado excede o limite de 3% definido na política Padrão PME e foi classificado como ponto de atenção para revisão.</p>
+                      <p className="mt-5 text-sm leading-7 text-muted-foreground">{analysis.summary || "O percentual encontrado será comparado com a política jurídica selecionada."}</p>
                       <div className="mt-8 flex items-center gap-2 text-[10px] text-muted-foreground">
                         <span className="rounded bg-critical/15 px-2 py-1 text-critical">E2 · Evidência parcial</span>
                         <span>Finding {highlight ? "selecionado" : ""}</span>

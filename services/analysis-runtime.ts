@@ -80,6 +80,7 @@ export function createRuntimeAnalysis(input: {
     evidences: [],
     conflicts: [],
     chatMessages: [],
+    validationChecks: [],
   }
   memory.set(id, analysis)
   persist()
