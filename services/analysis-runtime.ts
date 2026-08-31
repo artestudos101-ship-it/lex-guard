@@ -75,11 +75,39 @@ export function createRuntimeAnalysis(input: {
     blocks: [],
     events: [],
     jobs: [],
+    summary: "Aguardando o resultado da análise.",
+    llmSource: "demo",
+    evidences: [],
+    conflicts: [],
+    chatMessages: [],
   }
   memory.set(id, analysis)
   persist()
   emit()
   return analysis
+}
+
+export function applyGeminiResult(id: string, result: {
+  recommendation: "APPROVE" | "REVIEW" | "REJECT"
+  riskScore: number
+  evidenceQuality: "Alta" | "Média" | "Baixa"
+  summary: string
+  evidence: Array<{ label: string; page: number | null; excerpt: string }>
+  conflicts: Array<{ title: string; description: string; severity: "high" | "medium" | "low" }>
+}) {
+  const current = memory.get(id)
+  if (!current) return
+  updateRuntimeAnalysis(id, {
+    recommendation: result.recommendation,
+    riskScore: result.riskScore,
+    evidenceQuality: result.evidenceQuality,
+    summary: result.summary,
+    llmSource: "gemini",
+    evidenceCount: result.evidence.length,
+    conflictCount: result.conflicts.length,
+    evidences: result.evidence.map((item, index) => ({ ...item, id: `gemini:evidence:${index}` })),
+    conflicts: result.conflicts.map((item, index) => ({ ...item, id: `gemini:conflict:${index}` })),
+  })
 }
 
 export function updateRuntimeAnalysis(id: string, patch: Partial<RuntimeAnalysis>) {
